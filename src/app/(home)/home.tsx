@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Copy, Check, Loader2 } from "lucide-react";
 import { SetupGuide } from "@/components/setup-guide";
@@ -52,6 +53,7 @@ export default function Home(): React.ReactElement {
   const [goalTitle, setGoalTitle] = useState("");
   const [goalStart, setGoalStart] = useState("2026-01-01");
   const [goalEnd, setGoalEnd] = useState("2026-12-31");
+  const [scale, setScale] = useState(1);
   const [copied, setCopied] = useState(false);
   const [imageLoading, setImageLoading] = useState(false);
   const [origin, setOrigin] = useState("");
@@ -80,6 +82,9 @@ export default function Home(): React.ReactElement {
       params.set("goalEnd", goalEnd);
       if (goalTitle) params.set("goalTitle", goalTitle);
     }
+    if (view === "months" && scale !== 1) {
+      params.set("scale", String(scale));
+    }
 
     return params.toString();
   }, [
@@ -93,6 +98,7 @@ export default function Home(): React.ReactElement {
     goalEnd,
     goalTitle,
     showWeekStart,
+    scale,
   ]);
 
   const imageSrc = `/api/og?${queryString}`;
@@ -218,6 +224,22 @@ export default function Home(): React.ReactElement {
                   </Select>
                 </div>
               </div>
+
+              {view === "months" && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label>Dot Scale</Label>
+                    <span className="text-muted-foreground text-sm">{scale.toFixed(1)}x</span>
+                  </div>
+                  <Slider
+                    min={0.8}
+                    max={2}
+                    step={0.1}
+                    value={[scale]}
+                    onValueChange={([v]) => setScale(v)}
+                  />
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label>Phone Model</Label>
