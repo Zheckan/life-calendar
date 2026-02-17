@@ -529,9 +529,12 @@ function renderGoalCalendar(
     >
       <div
         style={{
-          fontSize: "36px",
+          fontSize: `${Math.min(36, Math.max(16, Math.floor((width / goalTitle.length) * 1.2)))}px`,
           color: colors.text,
           marginBottom: "40px",
+          maxWidth: `${width * 0.85}px`,
+          textAlign: "center" as const,
+          overflow: "hidden",
         }}
       >
         {goalTitle}
