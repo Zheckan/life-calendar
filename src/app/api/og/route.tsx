@@ -229,6 +229,7 @@ function renderDaysCalendar(
 
 function renderYearByMonth(
   weekStart: WeekStart,
+  scale: number,
   width: number,
   height: number,
   colors: ThemeColors,
@@ -239,11 +240,24 @@ function renderYearByMonth(
   const cellWidth = width * 0.85;
   const monthWidth = cellWidth / monthsPerRow;
   // Transposed: 7 columns (weekdays) x N rows (weeks)
-  const dotSize = Math.max(4, Math.min((monthWidth * 0.7) / 7, 17));
+  const dotSize = Math.max(4, Math.min((monthWidth * 0.7) / 7, 17 * scale));
   const gapSize = Math.max(3, dotSize * 0.88);
   const rowGap = dotSize * 0.88;
   // Fixed pitch per quarter row — gives uniform row spacing like the reference
   const quarterRowPitch = Math.round(8 * (dotSize + rowGap));
+  const monthGap = Math.round(47 * scale);
+
+  // Compute paddingTop that matches the centered position at scale=1,
+  // then keep it fixed so the top stays anchored when scale changes.
+  const basePad = height * 0.117;
+  const baseDotSize = Math.max(4, Math.min((monthWidth * 0.7) / 7, 17));
+  const baseRowGap = baseDotSize * 0.88;
+  const baseQRP = Math.round(8 * (baseDotSize + baseRowGap));
+  const lastRowMaxWeeks = Math.max(...data.months.slice(9, 12).map((m) => m.dots[0].length));
+  const monthLabelHeight = 40; // fontSize 30px + marginBottom 10px
+  const baseContentHeight =
+    3 * baseQRP + monthLabelHeight + lastRowMaxWeeks * (baseDotSize + baseRowGap) + 82 + 36; // summary marginTop + fontSize
+  const paddingTop = Math.round(basePad + Math.max(0, (height - basePad - baseContentHeight) / 2));
 
   return (
     <div
@@ -251,12 +265,11 @@ function renderYearByMonth(
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        justifyContent: "center",
         width: "100%",
         height: "100%",
         backgroundColor: colors.bg,
         fontFamily: "Inter",
-        paddingTop: `${Math.round(height * 0.117)}px`,
+        paddingTop: `${paddingTop}px`,
       }}
     >
       <div
@@ -273,7 +286,7 @@ function renderYearByMonth(
               display: "flex",
               flexDirection: "row",
               justifyContent: "center",
-              gap: "47px",
+              gap: `${monthGap}px`,
               ...(rowIdx < 3 ? { height: `${quarterRowPitch}px` } : {}),
             }}
           >
@@ -586,6 +599,7 @@ export async function GET(request: NextRequest): Promise<ImageResponse> {
   const goalEnd = searchParams.get("goalEnd") || "2026-12-31";
   const goalTitle = searchParams.get("goalTitle") || "Goal";
   const theme = searchParams.get("theme") || "dark";
+  const scale = parseFloat(searchParams.get("scale") || "1");
 
   const colors = getThemeColors(theme);
 
@@ -596,7 +610,7 @@ export async function GET(request: NextRequest): Promise<ImageResponse> {
       content = renderLifeCalendar(birthday, width, height, colors);
       break;
     case "months":
-      content = renderYearByMonth(weekStart, width, height, colors);
+      content = renderYearByMonth(weekStart, scale, width, height, colors);
       break;
     case "quarters":
       content = renderQuarterCalendar(weekStart, width, height, colors);
