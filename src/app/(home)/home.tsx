@@ -16,21 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Copy, Check, Loader2 } from "lucide-react";
 import { SetupGuide } from "@/components/setup-guide";
 import type { CalendarView, WeekStart } from "@/lib/calendar-utils";
-
-const PHONE_PRESETS: Record<string, { width: number; height: number }> = {
-  "iPhone 13 mini": { width: 1080, height: 2340 },
-  "iPhone 13 / 14 / 14 Pro": { width: 1170, height: 2532 },
-  "iPhone 13 Pro Max / 14 Plus": { width: 1284, height: 2778 },
-  "iPhone 15 / 15 Pro / 16": { width: 1179, height: 2556 },
-  "iPhone 15 Plus / 15 Pro Max / 16 Plus": { width: 1290, height: 2796 },
-  "iPhone 16 Pro": { width: 1206, height: 2622 },
-  "iPhone 16 Pro Max": { width: 1320, height: 2868 },
-  "Samsung Galaxy S24": { width: 1080, height: 2340 },
-  "Samsung Galaxy S24+ / Ultra": { width: 1440, height: 3120 },
-  "Google Pixel 9": { width: 1080, height: 2424 },
-  "Google Pixel 9 Pro": { width: 1280, height: 2856 },
-  Custom: { width: 1179, height: 2556 },
-};
+import { SCREEN_RESOLUTIONS } from "@/lib/screen-resolutions";
 
 const VIEW_OPTIONS: { value: CalendarView; label: string; description: string }[] = [
   { value: "days", label: "Days", description: "All days of the year" },
@@ -106,10 +92,12 @@ export default function Home(): React.ReactElement {
 
   const handlePhoneChange = useCallback((value: string) => {
     setPhoneModel(value);
-    const preset = PHONE_PRESETS[value];
-    if (preset && value !== "Custom") {
-      setWidth(preset.width);
-      setHeight(preset.height);
+    if (value !== "Custom") {
+      const preset = SCREEN_RESOLUTIONS.find((r) => r.name === value);
+      if (preset) {
+        setWidth(preset.width);
+        setHeight(preset.height);
+      }
     }
   }, []);
 
@@ -248,9 +236,9 @@ export default function Home(): React.ReactElement {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {Object.keys(PHONE_PRESETS).map((name) => (
-                      <SelectItem key={name} value={name}>
-                        {name}
+                    {SCREEN_RESOLUTIONS.map((r) => (
+                      <SelectItem key={r.name} value={r.name}>
+                        {r.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
