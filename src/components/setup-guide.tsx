@@ -29,7 +29,7 @@ function CopyUrlButton({ url }: { url: string }): React.ReactElement {
 
   return (
     <div className="my-3 flex items-center gap-2">
-      <code className="bg-muted text-foreground min-w-0 flex-1 truncate rounded-md px-3 py-2 font-mono text-xs">
+      <code className="bg-muted text-foreground min-w-0 flex-1 rounded-md px-3 py-2 font-mono text-xs break-all">
         {url}
       </code>
       <Button variant="outline" size="icon" onClick={handleCopy} className="shrink-0">
