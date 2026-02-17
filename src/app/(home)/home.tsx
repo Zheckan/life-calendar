@@ -16,21 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Copy, Check, Loader2 } from "lucide-react";
 import { SetupGuide } from "@/components/setup-guide";
 import type { CalendarView, WeekStart } from "@/lib/calendar-utils";
-
-const PHONE_PRESETS: Record<string, { width: number; height: number }> = {
-  "iPhone 13 mini": { width: 1080, height: 2340 },
-  "iPhone 13 / 14 / 14 Pro": { width: 1170, height: 2532 },
-  "iPhone 13 Pro Max / 14 Plus": { width: 1284, height: 2778 },
-  "iPhone 15 / 15 Pro / 16": { width: 1179, height: 2556 },
-  "iPhone 15 Plus / 15 Pro Max / 16 Plus": { width: 1290, height: 2796 },
-  "iPhone 16 Pro": { width: 1206, height: 2622 },
-  "iPhone 16 Pro Max": { width: 1320, height: 2868 },
-  "Samsung Galaxy S24": { width: 1080, height: 2340 },
-  "Samsung Galaxy S24+ / Ultra": { width: 1440, height: 3120 },
-  "Google Pixel 9": { width: 1080, height: 2424 },
-  "Google Pixel 9 Pro": { width: 1280, height: 2856 },
-  Custom: { width: 1179, height: 2556 },
-};
+import { SCREEN_RESOLUTIONS } from "@/lib/screen-resolutions";
 
 const VIEW_OPTIONS: { value: CalendarView; label: string; description: string }[] = [
   { value: "days", label: "Days", description: "All days of the year" },
@@ -54,6 +40,9 @@ export default function Home(): React.ReactElement {
   const [goalStart, setGoalStart] = useState("2026-01-01");
   const [goalEnd, setGoalEnd] = useState("2026-12-31");
   const [scale, setScale] = useState(1);
+  const [accentColor, setAccentColor] = useState("");
+  const [bgColor, setBgColor] = useState("");
+  const [dotColor, setDotColor] = useState("");
   const [copied, setCopied] = useState(false);
   const [imageLoading, setImageLoading] = useState(false);
   const [origin, setOrigin] = useState("");
@@ -68,8 +57,6 @@ export default function Home(): React.ReactElement {
     const params = new URLSearchParams();
     params.set("view", view);
     params.set("theme", theme);
-    params.set("width", String(width));
-    params.set("height", String(height));
 
     if (showWeekStart) {
       params.set("weekStart", weekStart);
@@ -85,6 +72,9 @@ export default function Home(): React.ReactElement {
     if (view === "months" && scale !== 1) {
       params.set("scale", String(scale));
     }
+    if (accentColor) params.set("accent", accentColor);
+    if (bgColor) params.set("bg", bgColor);
+    if (dotColor) params.set("dot", dotColor);
 
     return params.toString();
   }, [
@@ -99,17 +89,22 @@ export default function Home(): React.ReactElement {
     goalTitle,
     showWeekStart,
     scale,
+    accentColor,
+    bgColor,
+    dotColor,
   ]);
 
-  const imageSrc = `/api/og?${queryString}`;
-  const apiUrl = `${origin}/api/og?${queryString}`;
+  const imageSrc = `/og/${width}x${height}?${queryString}`;
+  const apiUrl = `${origin}/og/${width}x${height}?${queryString}`;
 
   const handlePhoneChange = useCallback((value: string) => {
     setPhoneModel(value);
-    const preset = PHONE_PRESETS[value];
-    if (preset && value !== "Custom") {
-      setWidth(preset.width);
-      setHeight(preset.height);
+    if (value !== "Custom") {
+      const preset = SCREEN_RESOLUTIONS.find((r) => r.name === value);
+      if (preset) {
+        setWidth(preset.width);
+        setHeight(preset.height);
+      }
     }
   }, []);
 
@@ -137,12 +132,15 @@ export default function Home(): React.ReactElement {
                 <Label>Calendar Type</Label>
                 <Select value={view} onValueChange={(v) => setView(v as CalendarView)}>
                   <SelectTrigger>
-                    <SelectValue />
+                    <SelectValue>{VIEW_OPTIONS.find((o) => o.value === view)?.label}</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {VIEW_OPTIONS.map((opt) => (
                       <SelectItem key={opt.value} value={opt.value}>
-                        {opt.label} ({opt.description})
+                        <span className="font-medium">{opt.label}</span>
+                        <span className="text-muted-foreground ml-1 text-xs">
+                          {opt.description}
+                        </span>
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -225,6 +223,81 @@ export default function Home(): React.ReactElement {
                 </div>
               </div>
 
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label>Custom Colors</Label>
+                  {(accentColor || bgColor || dotColor) && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setAccentColor("");
+                        setBgColor("");
+                        setDotColor("");
+                      }}
+                    >
+                      Reset
+                    </Button>
+                  )}
+                </div>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Accent</Label>
+                    <div className="flex gap-1">
+                      <Input
+                        type="color"
+                        value={accentColor || "#F56B3F"}
+                        onChange={(e) => setAccentColor(e.target.value)}
+                        className="h-9 w-12 shrink-0 cursor-pointer p-1"
+                      />
+                      <Input
+                        type="text"
+                        placeholder="#F56B3F"
+                        value={accentColor}
+                        onChange={(e) => setAccentColor(e.target.value)}
+                        className="min-w-0 font-mono text-xs"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Background</Label>
+                    <div className="flex gap-1">
+                      <Input
+                        type="color"
+                        value={bgColor || "#1A1A1A"}
+                        onChange={(e) => setBgColor(e.target.value)}
+                        className="h-9 w-12 shrink-0 cursor-pointer p-1"
+                      />
+                      <Input
+                        type="text"
+                        placeholder="#1A1A1A"
+                        value={bgColor}
+                        onChange={(e) => setBgColor(e.target.value)}
+                        className="min-w-0 font-mono text-xs"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Dots</Label>
+                    <div className="flex gap-1">
+                      <Input
+                        type="color"
+                        value={dotColor || "#404040"}
+                        onChange={(e) => setDotColor(e.target.value)}
+                        className="h-9 w-12 shrink-0 cursor-pointer p-1"
+                      />
+                      <Input
+                        type="text"
+                        placeholder="auto"
+                        value={dotColor}
+                        onChange={(e) => setDotColor(e.target.value)}
+                        className="min-w-0 font-mono text-xs"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {view === "months" && (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
@@ -248,9 +321,9 @@ export default function Home(): React.ReactElement {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {Object.keys(PHONE_PRESETS).map((name) => (
-                      <SelectItem key={name} value={name}>
-                        {name}
+                    {SCREEN_RESOLUTIONS.map((r) => (
+                      <SelectItem key={r.name} value={r.name}>
+                        {r.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -309,7 +382,7 @@ export default function Home(): React.ReactElement {
               <div className="space-y-2">
                 <Label>API URL</Label>
                 <div className="flex gap-2">
-                  <Input readOnly value={apiUrl} className="font-mono text-xs" />
+                  <Input readOnly value={apiUrl} className="min-w-0 font-mono text-xs" />
                   <Button variant="outline" size="icon" onClick={handleCopy}>
                     {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                   </Button>

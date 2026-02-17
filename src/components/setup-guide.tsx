@@ -29,7 +29,7 @@ function CopyUrlButton({ url }: { url: string }): React.ReactElement {
 
   return (
     <div className="my-3 flex items-center gap-2">
-      <code className="bg-muted text-foreground flex-1 overflow-x-auto rounded-md px-3 py-2 font-mono text-xs">
+      <code className="bg-muted text-foreground min-w-0 flex-1 rounded-md px-3 py-2 font-mono text-xs break-all">
         {url}
       </code>
       <Button variant="outline" size="icon" onClick={handleCopy} className="shrink-0">
@@ -50,11 +50,11 @@ function ImportantBox({ children }: { children: React.ReactNode }): React.ReactE
 
 export function SetupGuide({ apiUrl }: SetupGuideProps): React.ReactElement {
   return (
-    <Card>
+    <Card className="overflow-hidden">
       <CardHeader>
         <CardTitle>Setup Guide</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="overflow-hidden">
         <Tabs defaultValue="iphone">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="iphone">iPhone</TabsTrigger>
@@ -65,7 +65,7 @@ export function SetupGuide({ apiUrl }: SetupGuideProps): React.ReactElement {
             <div className="space-y-3">
               <div className="flex items-start gap-3">
                 <StepBadge number={1} />
-                <div>
+                <div className="min-w-0 flex-1">
                   <h3 className="text-foreground font-semibold">Your Configuration</h3>
                   <p className="text-muted-foreground mt-1 text-sm">
                     Your personalized wallpaper URL:
@@ -78,7 +78,7 @@ export function SetupGuide({ apiUrl }: SetupGuideProps): React.ReactElement {
             <div className="space-y-3">
               <div className="flex items-start gap-3">
                 <StepBadge number={2} />
-                <div>
+                <div className="min-w-0 flex-1">
                   <h3 className="text-foreground font-semibold">Create Automation</h3>
                   <p className="text-muted-foreground mt-1 text-sm">
                     Open <strong>Shortcuts</strong> app &rarr; Go to <strong>Automation</strong> tab
@@ -94,7 +94,7 @@ export function SetupGuide({ apiUrl }: SetupGuideProps): React.ReactElement {
             <div className="space-y-3">
               <div className="flex items-start gap-3">
                 <StepBadge number={3} />
-                <div>
+                <div className="min-w-0 flex-1">
                   <h3 className="text-foreground font-semibold">Create Shortcut</h3>
                   <div className="text-muted-foreground mt-2 space-y-3 text-sm">
                     <p>
@@ -122,7 +122,7 @@ export function SetupGuide({ apiUrl }: SetupGuideProps): React.ReactElement {
             <div className="space-y-3">
               <div className="flex items-start gap-3">
                 <StepBadge number={1} />
-                <div>
+                <div className="min-w-0 flex-1">
                   <h3 className="text-foreground font-semibold">Your Configuration</h3>
                   <p className="text-muted-foreground mt-1 text-sm">
                     Your personalized wallpaper URL:
@@ -135,7 +135,7 @@ export function SetupGuide({ apiUrl }: SetupGuideProps): React.ReactElement {
             <div className="space-y-3">
               <div className="flex items-start gap-3">
                 <StepBadge number={2} />
-                <div>
+                <div className="min-w-0 flex-1">
                   <h3 className="text-foreground font-semibold">Prerequisites</h3>
                   <p className="text-muted-foreground mt-1 text-sm">
                     Install{" "}
@@ -156,7 +156,7 @@ export function SetupGuide({ apiUrl }: SetupGuideProps): React.ReactElement {
             <div className="space-y-3">
               <div className="flex items-start gap-3">
                 <StepBadge number={3} />
-                <div>
+                <div className="min-w-0 flex-1">
                   <h3 className="text-foreground font-semibold">Setup Macro</h3>
                   <div className="text-muted-foreground mt-2 space-y-2 text-sm">
                     <p>
@@ -174,7 +174,7 @@ export function SetupGuide({ apiUrl }: SetupGuideProps): React.ReactElement {
             <div className="space-y-3">
               <div className="flex items-start gap-3">
                 <StepBadge number={4} />
-                <div>
+                <div className="min-w-0 flex-1">
                   <h3 className="text-foreground font-semibold">Configure Actions</h3>
                   <div className="text-muted-foreground mt-2 space-y-4 text-sm">
                     <div>
@@ -228,7 +228,7 @@ export function SetupGuide({ apiUrl }: SetupGuideProps): React.ReactElement {
             <div className="space-y-3">
               <div className="flex items-start gap-3">
                 <StepBadge number={5} />
-                <div>
+                <div className="min-w-0 flex-1">
                   <h3 className="text-foreground font-semibold">Finalize</h3>
                   <p className="text-muted-foreground mt-1 text-sm">
                     Give the macro a name &rarr; Tap <strong>Create Macro</strong>

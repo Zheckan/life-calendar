@@ -1,36 +1,57 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Life Calendar
+
+Minimalist wallpaper generator for phones that shows your calendar progress as dot grids. Set it up once with iOS Shortcuts or Android MacroDroid and your wallpaper auto-updates every day.
+
+> Be aware that this is 99% vibe coded. Not in a "I've never looked at the code" way, but more like "I described what I wanted, AI wrote it, I tweaked it until it looked right, repeat". The code works, the wallpapers look good, but if you're expecting clean architecture and design patterns — you've been warned.
+
+## Features
+
+- **5 calendar views:** Days, Months, Quarters, Life (weeks of your life), Goal (countdown to a deadline)
+- **Auto-updating wallpapers** via iOS Shortcuts or Android MacroDroid
+- **Custom colors** for accent, background, and inactive dots with auto-contrast
+- **Multiple phone resolutions** pre-configured (iPhone, Samsung, Pixel) with support for custom sizes
+- **Dark and light themes**
 
 ## Getting Started
 
-First, run the development server:
+Clone this repository:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
+git clone https://github.com/Zheckan/life-calendar.git
+cd life-calendar
+```
+
+Install dependencies:
+
+```bash
+bun install
+```
+
+Start the development server:
+
+```bash
 bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## How to Contribute
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Want to add a new phone resolution? Just add a line to `src/lib/screen-resolutions.ts`. That's it.
 
-## Learn More
+For anything else:
 
-To learn more about Next.js, take a look at the following resources:
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feat/something-cool`)
+3. Make your changes
+4. Make sure everything is clean: `bun run lint` and `bun run format`
+5. Commit your changes (we use [Conventional Commits](https://www.conventionalcommits.org/))
+6. Push to the branch and open a Pull Request
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## License
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### I have no idea what license to use, probably MIT (after small research). Just don't be cunts or russians, russians can go and fuck themselves.
 
-## Deploy on Vercel
+And there is small fee for using this content. Donate to [Come Back Alive](https://savelife.in.ua/en/donate-en/). Donate anything, as one [Ukrainian TV person](https://twitter.com/max_shcherbyna) said: "Donate is like a penis, there isn't small one".
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
