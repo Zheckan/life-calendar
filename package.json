@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "bunx oxlint@latest ./src",
+    "fix": "bun run lint && bun run format",
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
     "prepare": "husky"
