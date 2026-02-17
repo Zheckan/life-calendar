@@ -50,11 +50,11 @@ function ImportantBox({ children }: { children: React.ReactNode }): React.ReactE
 
 export function SetupGuide({ apiUrl }: SetupGuideProps): React.ReactElement {
   return (
-    <Card>
+    <Card className="overflow-hidden">
       <CardHeader>
         <CardTitle>Setup Guide</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="overflow-hidden">
         <Tabs defaultValue="iphone">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="iphone">iPhone</TabsTrigger>
