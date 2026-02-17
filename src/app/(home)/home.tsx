@@ -132,12 +132,15 @@ export default function Home(): React.ReactElement {
                 <Label>Calendar Type</Label>
                 <Select value={view} onValueChange={(v) => setView(v as CalendarView)}>
                   <SelectTrigger>
-                    <SelectValue />
+                    <SelectValue>{VIEW_OPTIONS.find((o) => o.value === view)?.label}</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {VIEW_OPTIONS.map((opt) => (
                       <SelectItem key={opt.value} value={opt.value}>
-                        {opt.label} ({opt.description})
+                        <span className="font-medium">{opt.label}</span>
+                        <span className="text-muted-foreground ml-1 text-xs">
+                          {opt.description}
+                        </span>
                       </SelectItem>
                     ))}
                   </SelectContent>
