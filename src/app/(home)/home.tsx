@@ -57,8 +57,6 @@ export default function Home(): React.ReactElement {
     const params = new URLSearchParams();
     params.set("view", view);
     params.set("theme", theme);
-    params.set("width", String(width));
-    params.set("height", String(height));
 
     if (showWeekStart) {
       params.set("weekStart", weekStart);
@@ -96,8 +94,8 @@ export default function Home(): React.ReactElement {
     dotColor,
   ]);
 
-  const imageSrc = `/api/og?${queryString}`;
-  const apiUrl = `${origin}/api/og?${queryString}`;
+  const imageSrc = `/og/${width}x${height}?${queryString}`;
+  const apiUrl = `${origin}/og/${width}x${height}?${queryString}`;
 
   const handlePhoneChange = useCallback((value: string) => {
     setPhoneModel(value);
