@@ -40,6 +40,9 @@ export default function Home(): React.ReactElement {
   const [goalStart, setGoalStart] = useState("2026-01-01");
   const [goalEnd, setGoalEnd] = useState("2026-12-31");
   const [scale, setScale] = useState(1);
+  const [accentColor, setAccentColor] = useState("");
+  const [bgColor, setBgColor] = useState("");
+  const [dotColor, setDotColor] = useState("");
   const [copied, setCopied] = useState(false);
   const [imageLoading, setImageLoading] = useState(false);
   const [origin, setOrigin] = useState("");
@@ -71,6 +74,9 @@ export default function Home(): React.ReactElement {
     if (view === "months" && scale !== 1) {
       params.set("scale", String(scale));
     }
+    if (accentColor) params.set("accent", accentColor);
+    if (bgColor) params.set("bg", bgColor);
+    if (dotColor) params.set("dot", dotColor);
 
     return params.toString();
   }, [
@@ -85,6 +91,9 @@ export default function Home(): React.ReactElement {
     goalTitle,
     showWeekStart,
     scale,
+    accentColor,
+    bgColor,
+    dotColor,
   ]);
 
   const imageSrc = `/api/og?${queryString}`;
@@ -210,6 +219,81 @@ export default function Home(): React.ReactElement {
                       <SelectItem value="light">Light</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label>Custom Colors</Label>
+                  {(accentColor || bgColor || dotColor) && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setAccentColor("");
+                        setBgColor("");
+                        setDotColor("");
+                      }}
+                    >
+                      Reset
+                    </Button>
+                  )}
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Accent</Label>
+                    <div className="flex gap-1">
+                      <Input
+                        type="color"
+                        value={accentColor || "#F56B3F"}
+                        onChange={(e) => setAccentColor(e.target.value)}
+                        className="h-9 w-12 cursor-pointer p-1"
+                      />
+                      <Input
+                        type="text"
+                        placeholder="#F56B3F"
+                        value={accentColor}
+                        onChange={(e) => setAccentColor(e.target.value)}
+                        className="font-mono text-xs"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Background</Label>
+                    <div className="flex gap-1">
+                      <Input
+                        type="color"
+                        value={bgColor || "#1A1A1A"}
+                        onChange={(e) => setBgColor(e.target.value)}
+                        className="h-9 w-12 cursor-pointer p-1"
+                      />
+                      <Input
+                        type="text"
+                        placeholder="#1A1A1A"
+                        value={bgColor}
+                        onChange={(e) => setBgColor(e.target.value)}
+                        className="font-mono text-xs"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Dots</Label>
+                    <div className="flex gap-1">
+                      <Input
+                        type="color"
+                        value={dotColor || "#404040"}
+                        onChange={(e) => setDotColor(e.target.value)}
+                        className="h-9 w-12 cursor-pointer p-1"
+                      />
+                      <Input
+                        type="text"
+                        placeholder="auto"
+                        value={dotColor}
+                        onChange={(e) => setDotColor(e.target.value)}
+                        className="font-mono text-xs"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
 

@@ -19,25 +19,60 @@ interface ThemeColors {
   highlight: string;
 }
 
-function getThemeColors(theme: string): ThemeColors {
-  if (theme === "light") {
-    return {
-      bg: "#F5F5F7",
-      past: "#1A1A1A",
-      current: "#F97316",
-      future: "#D1D5DB",
-      text: "#6B7280",
-      highlight: "#F97316",
-    };
+const HEX_COLOR_RE = /^#[0-9a-fA-F]{6}$/;
+
+function isValidHex(color: string | null): color is string {
+  return color !== null && HEX_COLOR_RE.test(color);
+}
+
+function isDarkColor(hex: string): boolean {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return r + g + b < 384;
+}
+
+function getThemeColors(
+  theme: string,
+  customAccent: string | null,
+  customBg: string | null,
+  customDot: string | null,
+): ThemeColors {
+  const base: ThemeColors =
+    theme === "light"
+      ? {
+          bg: "#F5F5F7",
+          past: "#1A1A1A",
+          current: "#F97316",
+          future: "#D1D5DB",
+          text: "#6B7280",
+          highlight: "#F97316",
+        }
+      : {
+          bg: "#1A1A1A",
+          past: "#FFFFFF",
+          current: "#F56B3F",
+          future: "#404040",
+          text: "#888888",
+          highlight: "#F56B3F",
+        };
+
+  if (isValidHex(customAccent)) {
+    base.current = customAccent;
+    base.highlight = customAccent;
   }
-  return {
-    bg: "#1A1A1A",
-    past: "#FFFFFF",
-    current: "#F56B3F",
-    future: "#404040",
-    text: "#888",
-    highlight: "#F56B3F",
-  };
+  if (isValidHex(customBg)) {
+    base.bg = customBg;
+    // Auto-compute contrasting future dot color if not explicitly provided
+    if (!isValidHex(customDot)) {
+      base.future = isDarkColor(customBg) ? "#606060" : "#D1D5DB";
+    }
+  }
+  if (isValidHex(customDot)) {
+    base.future = customDot;
+  }
+
+  return base;
 }
 
 function getDotColor(state: DotState, colors: ThemeColors): string {
@@ -603,8 +638,11 @@ export async function GET(request: NextRequest): Promise<ImageResponse> {
   const goalTitle = searchParams.get("goalTitle") || "Goal";
   const theme = searchParams.get("theme") || "dark";
   const scale = parseFloat(searchParams.get("scale") || "1");
+  const accent = searchParams.get("accent");
+  const bg = searchParams.get("bg");
+  const dot = searchParams.get("dot");
 
-  const colors = getThemeColors(theme);
+  const colors = getThemeColors(theme, accent, bg, dot);
 
   let content: React.ReactElement;
 
