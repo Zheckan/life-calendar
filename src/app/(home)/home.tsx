@@ -237,7 +237,7 @@ export default function Home(): React.ReactElement {
                     </Button>
                   )}
                 </div>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                   <div className="space-y-1">
                     <Label className="text-xs">Accent</Label>
                     <div className="flex gap-1">
@@ -245,14 +245,14 @@ export default function Home(): React.ReactElement {
                         type="color"
                         value={accentColor || "#F56B3F"}
                         onChange={(e) => setAccentColor(e.target.value)}
-                        className="h-9 w-12 cursor-pointer p-1"
+                        className="h-9 w-12 shrink-0 cursor-pointer p-1"
                       />
                       <Input
                         type="text"
                         placeholder="#F56B3F"
                         value={accentColor}
                         onChange={(e) => setAccentColor(e.target.value)}
-                        className="font-mono text-xs"
+                        className="min-w-0 font-mono text-xs"
                       />
                     </div>
                   </div>
@@ -263,14 +263,14 @@ export default function Home(): React.ReactElement {
                         type="color"
                         value={bgColor || "#1A1A1A"}
                         onChange={(e) => setBgColor(e.target.value)}
-                        className="h-9 w-12 cursor-pointer p-1"
+                        className="h-9 w-12 shrink-0 cursor-pointer p-1"
                       />
                       <Input
                         type="text"
                         placeholder="#1A1A1A"
                         value={bgColor}
                         onChange={(e) => setBgColor(e.target.value)}
-                        className="font-mono text-xs"
+                        className="min-w-0 font-mono text-xs"
                       />
                     </div>
                   </div>
@@ -281,14 +281,14 @@ export default function Home(): React.ReactElement {
                         type="color"
                         value={dotColor || "#404040"}
                         onChange={(e) => setDotColor(e.target.value)}
-                        className="h-9 w-12 cursor-pointer p-1"
+                        className="h-9 w-12 shrink-0 cursor-pointer p-1"
                       />
                       <Input
                         type="text"
                         placeholder="auto"
                         value={dotColor}
                         onChange={(e) => setDotColor(e.target.value)}
-                        className="font-mono text-xs"
+                        className="min-w-0 font-mono text-xs"
                       />
                     </div>
                   </div>
@@ -379,7 +379,7 @@ export default function Home(): React.ReactElement {
               <div className="space-y-2">
                 <Label>API URL</Label>
                 <div className="flex gap-2">
-                  <Input readOnly value={apiUrl} className="font-mono text-xs" />
+                  <Input readOnly value={apiUrl} className="min-w-0 font-mono text-xs" />
                   <Button variant="outline" size="icon" onClick={handleCopy}>
                     {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                   </Button>
