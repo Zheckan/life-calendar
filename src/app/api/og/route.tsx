@@ -625,14 +625,21 @@ const interFont = fetch(
   "https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfMZg.ttf",
 ).then((res) => res.arrayBuffer());
 
-export async function GET(request: NextRequest): Promise<ImageResponse> {
+export async function GET(request: NextRequest): Promise<ImageResponse | Response> {
   const { searchParams } = request.nextUrl;
+
+  const rawWidth = searchParams.get("width");
+  const rawHeight = searchParams.get("height");
+  const width = rawWidth ? parseInt(rawWidth, 10) : NaN;
+  const height = rawHeight ? parseInt(rawHeight, 10) : NaN;
+
+  if (!rawWidth || !rawHeight || isNaN(width) || isNaN(height) || width <= 0 || height <= 0) {
+    return new Response("Missing required parameters: width and height", { status: 400 });
+  }
 
   const view = (searchParams.get("view") || "days") as CalendarView;
   const birthday = searchParams.get("birthday") || "1990-01-15";
   const weekStart = (searchParams.get("weekStart") || "monday") as WeekStart;
-  const width = parseInt(searchParams.get("width") || "1179", 10);
-  const height = parseInt(searchParams.get("height") || "2556", 10);
   const goalStart = searchParams.get("goalStart") || "2026-01-01";
   const goalEnd = searchParams.get("goalEnd") || "2026-12-31";
   const goalTitle = searchParams.get("goalTitle") || "Goal";
