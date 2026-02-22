@@ -149,48 +149,37 @@ export default function Home(): React.ReactElement {
         {/* Main content */}
         <main className="relative mx-auto max-w-6xl px-4 pb-16 sm:px-6">
           <div className="grid gap-10 lg:grid-cols-[340px_1fr] lg:items-start lg:gap-12 xl:grid-cols-[380px_1fr]">
-            {/* Phone preview */}
+            {/* Preview */}
             <motion.div
               className="flex justify-center lg:sticky lg:top-8"
               initial={{ opacity: 0, scale: 0.96 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.6, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
             >
-              <div className="relative">
-                <div className="relative w-[260px] overflow-hidden rounded-[2.8rem] border border-white/10 bg-black/90 p-[3px] shadow-2xl sm:w-[280px]">
-                  {/* Dynamic island */}
-                  <div className="absolute top-3.5 left-1/2 z-20 h-[16px] w-[72px] -translate-x-1/2 rounded-full bg-black" />
-
-                  {/* Screen */}
-                  <div
-                    className="relative overflow-hidden rounded-[2.6rem] bg-neutral-900"
-                    style={{ aspectRatio: `${width} / ${height}`, maxHeight: "520px" }}
-                  >
-                    <AnimatePresence>
-                      {imageLoading && (
-                        <motion.div
-                          className="absolute inset-0 z-10 flex items-center justify-center bg-black/40 backdrop-blur-sm"
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                        >
-                          <Loader2 className="h-6 w-6 animate-spin text-white/60" />
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                    <img
-                      src={imageSrc}
-                      alt="Calendar preview"
-                      className="h-full w-full object-contain"
-                      onLoadStart={() => setImageLoading(true)}
-                      onLoad={() => setImageLoading(false)}
-                      onError={() => setImageLoading(false)}
-                    />
-                  </div>
-                </div>
-
-                {/* Ambient glow */}
-                <div className="bg-primary/[0.04] absolute -inset-8 -z-10 rounded-[4rem] blur-3xl" />
+              <div
+                className="border-border relative mx-auto overflow-hidden rounded-2xl border-2"
+                style={{ aspectRatio: `${width} / ${height}`, maxHeight: "520px" }}
+              >
+                <AnimatePresence>
+                  {imageLoading && (
+                    <motion.div
+                      className="bg-muted/50 absolute inset-0 z-10 flex items-center justify-center"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                    >
+                      <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+                <img
+                  src={imageSrc}
+                  alt="Calendar preview"
+                  className="h-full w-full object-contain"
+                  onLoadStart={() => setImageLoading(true)}
+                  onLoad={() => setImageLoading(false)}
+                  onError={() => setImageLoading(false)}
+                />
               </div>
             </motion.div>
 
