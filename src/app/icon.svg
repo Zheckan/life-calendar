@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+  <style>
+    .past { fill: #171717; }
+    .current { fill: #F56B3F; }
+    .future { fill: #D4D4D4; }
+    @media (prefers-color-scheme: dark) {
+      .past { fill: #FAFAFA; }
+      .future { fill: #525252; }
+    }
+  </style>
+  <!-- Row 1: all past -->
+  <circle cx="5.5" cy="5.5" r="2.2" class="past"/>
+  <circle cx="12.5" cy="5.5" r="2.2" class="past"/>
+  <circle cx="19.5" cy="5.5" r="2.2" class="past"/>
+  <circle cx="26.5" cy="5.5" r="2.2" class="past"/>
+  <!-- Row 2: past → current → future -->
+  <circle cx="5.5" cy="12.5" r="2.2" class="past"/>
+  <circle cx="12.5" cy="12.5" r="2.2" class="past"/>
+  <circle cx="19.5" cy="12.5" r="2.2" class="current"/>
+  <circle cx="26.5" cy="12.5" r="2.2" class="future"/>
+  <!-- Row 3: all future -->
+  <circle cx="5.5" cy="19.5" r="2.2" class="future"/>
+  <circle cx="12.5" cy="19.5" r="2.2" class="future"/>
+  <circle cx="19.5" cy="19.5" r="2.2" class="future"/>
+  <circle cx="26.5" cy="19.5" r="2.2" class="future"/>
+  <!-- Row 4: all future -->
+  <circle cx="5.5" cy="26.5" r="2.2" class="future"/>
+  <circle cx="12.5" cy="26.5" r="2.2" class="future"/>
+  <circle cx="19.5" cy="26.5" r="2.2" class="future"/>
+  <circle cx="26.5" cy="26.5" r="2.2" class="future"/>
+</svg>
