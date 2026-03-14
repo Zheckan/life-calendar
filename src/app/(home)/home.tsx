@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
-import { Copy, Check, Loader2, RotateCcw } from "lucide-react";
+import { Copy, Check, Loader2, RotateCcw, X } from "lucide-react";
 import { SetupGuide } from "@/components/setup-guide";
 import type { CalendarView, WeekStart } from "@/lib/calendar-utils";
 import { SCREEN_RESOLUTIONS } from "@/lib/screen-resolutions";
@@ -151,14 +151,14 @@ export default function Home(): React.ReactElement {
           <div className="grid gap-10 lg:grid-cols-[340px_1fr] lg:items-start lg:gap-12 xl:grid-cols-[380px_1fr]">
             {/* Preview */}
             <motion.div
-              className="flex justify-center lg:sticky lg:top-8"
+              className="sticky top-4 z-20 flex justify-center lg:top-8"
               initial={{ opacity: 0, scale: 0.96 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.6, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
             >
               <div
-                className="border-border relative mx-auto overflow-hidden rounded-2xl border-2"
-                style={{ aspectRatio: `${width} / ${height}`, maxHeight: "520px" }}
+                className="border-border relative mx-auto max-h-[240px] overflow-hidden rounded-2xl border-2 lg:max-h-[520px]"
+                style={{ aspectRatio: `${width} / ${height}` }}
               >
                 <AnimatePresence>
                   {imageLoading && (
@@ -328,7 +328,7 @@ export default function Home(): React.ReactElement {
                         }}
                       >
                         <RotateCcw className="h-3 w-3" />
-                        Reset
+                        Reset All
                       </Button>
                     )}
                   </div>
@@ -349,6 +349,16 @@ export default function Home(): React.ReactElement {
                           onChange={(e) => setAccentColor(e.target.value)}
                           className="min-w-0 font-mono text-xs"
                         />
+                        {accentColor && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-9 w-9 shrink-0"
+                            onClick={() => setAccentColor("")}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        )}
                       </div>
                     </div>
                     <div className="space-y-1.5">
@@ -367,6 +377,16 @@ export default function Home(): React.ReactElement {
                           onChange={(e) => setBgColor(e.target.value)}
                           className="min-w-0 font-mono text-xs"
                         />
+                        {bgColor && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-9 w-9 shrink-0"
+                            onClick={() => setBgColor("")}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        )}
                       </div>
                     </div>
                     <div className="space-y-1.5">
@@ -385,6 +405,16 @@ export default function Home(): React.ReactElement {
                           onChange={(e) => setDotColor(e.target.value)}
                           className="min-w-0 font-mono text-xs"
                         />
+                        {dotColor && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-9 w-9 shrink-0"
+                            onClick={() => setDotColor("")}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </div>
