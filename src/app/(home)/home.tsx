@@ -33,6 +33,57 @@ const FADE_VARIANTS = {
   visible: { opacity: 1, height: "auto" as const },
 };
 
+interface ColorControlProps {
+  id: string;
+  label: string;
+  pickerValue: string;
+  textPlaceholder: string;
+  textValue: string;
+  onPickerChange: (value: string) => void;
+  onTextChange: (value: string) => void;
+}
+
+function ColorControl({
+  id,
+  label,
+  pickerValue,
+  textPlaceholder,
+  textValue,
+  onPickerChange,
+  onTextChange,
+}: ColorControlProps): React.ReactElement {
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor={id} className="text-muted-foreground text-xs">
+        {label}
+      </Label>
+      <div className="flex gap-1.5">
+        <label className="border-input bg-input/30 relative block h-9 w-9 shrink-0 overflow-hidden rounded-md border">
+          <input
+            type="color"
+            value={pickerValue}
+            onChange={(e) => onPickerChange(e.target.value)}
+            aria-label={`${label} color picker`}
+            className="absolute inset-0 cursor-pointer opacity-0"
+          />
+          <span
+            className="pointer-events-none block h-full w-full rounded-[inherit] border border-white/10"
+            style={{ backgroundColor: pickerValue }}
+          />
+        </label>
+        <Input
+          id={id}
+          type="text"
+          placeholder={textPlaceholder}
+          value={textValue}
+          onChange={(e) => onTextChange(e.target.value)}
+          className="min-w-0 font-mono text-xs"
+        />
+      </div>
+    </div>
+  );
+}
+
 export default function Home(): React.ReactElement {
   const [view, setView] = useState<CalendarView>("days");
   const [birthday, setBirthday] = useState("1990-01-15");
@@ -49,7 +100,7 @@ export default function Home(): React.ReactElement {
   const [bgColor, setBgColor] = useState("");
   const [dotColor, setDotColor] = useState("");
   const [copied, setCopied] = useState(false);
-  const [imageLoading, setImageLoading] = useState(false);
+  const [loadedImageSrc, setLoadedImageSrc] = useState("");
   const [origin, setOrigin] = useState("");
 
   useEffect(() => {
@@ -100,7 +151,14 @@ export default function Home(): React.ReactElement {
   ]);
 
   const imageSrc = `/og/${width}x${height}?${queryString}`;
-  const apiUrl = `${origin}/og/${width}x${height}?${queryString}`;
+  const apiUrl = origin ? `${origin}${imageSrc}` : "";
+  const hasAbsoluteApiUrl = apiUrl.length > 0;
+  const previewDeviceLabel = phoneModel === "Custom" ? "Custom Resolution" : phoneModel;
+  const selectedViewOption = VIEW_OPTIONS.find((option) => option.value === view);
+  const imageLoading = loadedImageSrc !== imageSrc;
+  const defaultAccentColor = theme === "light" ? "#F97316" : "#F56B3F";
+  const defaultBgColor = theme === "light" ? "#F5F5F7" : "#1A1A1A";
+  const defaultDotColor = theme === "light" ? "#D1D5DB" : "#404040";
 
   const handlePhoneChange = (value: string) => {
     setPhoneModel(value);
@@ -114,6 +172,10 @@ export default function Home(): React.ReactElement {
   };
 
   const handleCopy = async () => {
+    if (!hasAbsoluteApiUrl) {
+      return;
+    }
+
     await navigator.clipboard.writeText(apiUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -123,7 +185,7 @@ export default function Home(): React.ReactElement {
 
   return (
     <MotionConfig reducedMotion="user">
-      <div className="relative min-h-screen">
+      <div className="relative min-h-[100svh]">
         {/* Background dot grid */}
         <div className="dot-grid pointer-events-none fixed inset-0" />
         <div className="from-background/0 via-background/60 to-background pointer-events-none fixed inset-0 bg-gradient-to-b" />
@@ -148,44 +210,107 @@ export default function Home(): React.ReactElement {
 
         {/* Main content */}
         <main className="relative mx-auto max-w-6xl px-4 pb-16 sm:px-6">
-          <div className="grid gap-10 lg:grid-cols-[340px_1fr] lg:items-start lg:gap-12 xl:grid-cols-[380px_1fr]">
+          <div className="grid gap-8 lg:grid-cols-[minmax(19.5rem,22.5rem)_minmax(0,1fr)] lg:items-stretch lg:gap-10 xl:grid-cols-[minmax(20rem,23rem)_minmax(0,1fr)]">
             {/* Preview */}
             <motion.div
-              className="flex justify-center lg:sticky lg:top-8"
+              className="order-2 flex justify-center lg:sticky lg:top-8 lg:order-1 lg:self-start"
               initial={{ opacity: 0, scale: 0.96 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.6, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
             >
-              <div
-                className="border-border relative mx-auto overflow-hidden rounded-2xl border-2"
-                style={{ aspectRatio: `${width} / ${height}`, maxHeight: "520px" }}
-              >
-                <AnimatePresence>
-                  {imageLoading && (
-                    <motion.div
-                      className="bg-muted/50 absolute inset-0 z-10 flex items-center justify-center"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
+              <section className="glass relative w-full max-w-none overflow-hidden rounded-[2rem] p-4 sm:p-5 lg:max-w-[22.5rem] lg:rounded-[2.25rem] lg:p-5 xl:max-w-[23rem]">
+                <div className="from-primary/12 via-primary/[0.05] pointer-events-none absolute inset-x-8 top-0 h-28 bg-gradient-to-b to-transparent blur-3xl" />
+                <div className="relative mb-4 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="section-label">Wallpaper Preview</p>
+                    <p className="text-foreground/90 mt-1 truncate text-sm font-medium">
+                      {previewDeviceLabel}
+                    </p>
+                    <p className="text-muted-foreground mt-0.5 font-mono text-xs">
+                      {width} x {height}
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCopy}
+                    disabled={!hasAbsoluteApiUrl}
+                    className="h-8 rounded-full px-3 text-xs"
+                  >
+                    {copied ? (
+                      <>
+                        <Check className="mr-1 h-3.5 w-3.5 text-green-500" />
+                        Copied
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="mr-1 h-3.5 w-3.5" />
+                        Copy Link
+                      </>
+                    )}
+                  </Button>
+                </div>
+
+                <div className="relative flex justify-center">
+                  <div
+                    className="border-border/70 relative w-full max-w-[min(100%,20.5rem)] overflow-hidden rounded-[2rem] border bg-black shadow-[0_30px_90px_-45px_rgba(0,0,0,0.95)] lg:max-w-[19.75rem] xl:max-w-[20rem]"
+                    style={{ aspectRatio: `${width} / ${height}` }}
+                  >
+                    <AnimatePresence>
+                      {imageLoading && (
+                        <motion.div
+                          className="bg-muted/50 absolute inset-0 z-10 flex items-center justify-center"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                        >
+                          <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                    <img
+                      src={imageSrc}
+                      alt="Calendar preview"
+                      className="absolute inset-0 block h-full w-full object-cover"
+                      fetchPriority="high"
+                      loading="eager"
+                      onLoad={() => setLoadedImageSrc(imageSrc)}
+                      onError={() => setLoadedImageSrc(imageSrc)}
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-4 lg:hidden">
+                  <p className="section-label mb-2">Wallpaper Link</p>
+                  <div className="flex gap-2">
+                    <Input
+                      readOnly
+                      value={apiUrl}
+                      placeholder="Preparing absolute URL..."
+                      className="min-w-0 font-mono text-xs"
+                    />
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={handleCopy}
+                      aria-label="Copy wallpaper link"
+                      disabled={!hasAbsoluteApiUrl}
+                      className="shrink-0"
                     >
-                      <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-                <img
-                  src={imageSrc}
-                  alt="Calendar preview"
-                  className="h-full w-full object-contain"
-                  onLoadStart={() => setImageLoading(true)}
-                  onLoad={() => setImageLoading(false)}
-                  onError={() => setImageLoading(false)}
-                />
-              </div>
+                      {copied ? (
+                        <Check className="h-4 w-4 text-green-500" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </section>
             </motion.div>
 
             {/* Configuration */}
             <motion.div
-              className="space-y-5"
+              className="order-1 space-y-5 lg:order-2 lg:flex lg:h-full lg:flex-col lg:justify-between lg:gap-5 lg:space-y-0"
               initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.25, ease: [0.16, 1, 0.3, 1] }}
@@ -195,7 +320,7 @@ export default function Home(): React.ReactElement {
                 <p className="section-label mb-4">Calendar Type</p>
                 <Select value={view} onValueChange={(v) => setView(v as CalendarView)}>
                   <SelectTrigger>
-                    <SelectValue>{VIEW_OPTIONS.find((o) => o.value === view)?.label}</SelectValue>
+                    <SelectValue>{selectedViewOption?.label}</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {VIEW_OPTIONS.map((opt) => (
@@ -208,6 +333,10 @@ export default function Home(): React.ReactElement {
                     ))}
                   </SelectContent>
                 </Select>
+                <p className="text-muted-foreground max-w-md pt-2 text-sm">
+                  {selectedViewOption?.description}. The preview and wallpaper link update
+                  instantly.
+                </p>
 
                 <AnimatePresence mode="wait">
                   {view === "life" && (
@@ -253,7 +382,7 @@ export default function Home(): React.ReactElement {
                             onChange={(e) => setGoalTitle(e.target.value)}
                           />
                         </div>
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                           <div className="space-y-2">
                             <Label htmlFor="goalStart">Start Date</Label>
                             <Input
@@ -333,60 +462,33 @@ export default function Home(): React.ReactElement {
                     )}
                   </div>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                    <div className="space-y-1.5">
-                      <Label className="text-muted-foreground text-xs">Accent</Label>
-                      <div className="flex gap-1.5">
-                        <Input
-                          type="color"
-                          value={accentColor || "#F56B3F"}
-                          onChange={(e) => setAccentColor(e.target.value)}
-                          className="h-9 w-11 shrink-0 cursor-pointer p-1"
-                        />
-                        <Input
-                          type="text"
-                          placeholder="#F56B3F"
-                          value={accentColor}
-                          onChange={(e) => setAccentColor(e.target.value)}
-                          className="min-w-0 font-mono text-xs"
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-muted-foreground text-xs">Background</Label>
-                      <div className="flex gap-1.5">
-                        <Input
-                          type="color"
-                          value={bgColor || "#1A1A1A"}
-                          onChange={(e) => setBgColor(e.target.value)}
-                          className="h-9 w-11 shrink-0 cursor-pointer p-1"
-                        />
-                        <Input
-                          type="text"
-                          placeholder="#1A1A1A"
-                          value={bgColor}
-                          onChange={(e) => setBgColor(e.target.value)}
-                          className="min-w-0 font-mono text-xs"
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-muted-foreground text-xs">Dots</Label>
-                      <div className="flex gap-1.5">
-                        <Input
-                          type="color"
-                          value={dotColor || "#404040"}
-                          onChange={(e) => setDotColor(e.target.value)}
-                          className="h-9 w-11 shrink-0 cursor-pointer p-1"
-                        />
-                        <Input
-                          type="text"
-                          placeholder="auto"
-                          value={dotColor}
-                          onChange={(e) => setDotColor(e.target.value)}
-                          className="min-w-0 font-mono text-xs"
-                        />
-                      </div>
-                    </div>
+                    <ColorControl
+                      id="accentColor"
+                      label="Accent"
+                      pickerValue={accentColor || defaultAccentColor}
+                      textPlaceholder={defaultAccentColor}
+                      textValue={accentColor}
+                      onPickerChange={setAccentColor}
+                      onTextChange={setAccentColor}
+                    />
+                    <ColorControl
+                      id="backgroundColor"
+                      label="Background"
+                      pickerValue={bgColor || defaultBgColor}
+                      textPlaceholder={defaultBgColor}
+                      textValue={bgColor}
+                      onPickerChange={setBgColor}
+                      onTextChange={setBgColor}
+                    />
+                    <ColorControl
+                      id="dotColor"
+                      label="Dots"
+                      pickerValue={dotColor || defaultDotColor}
+                      textPlaceholder="auto"
+                      textValue={dotColor}
+                      onPickerChange={setDotColor}
+                      onTextChange={setDotColor}
+                    />
                   </div>
                 </div>
 
@@ -401,7 +503,7 @@ export default function Home(): React.ReactElement {
                       exit="hidden"
                       transition={{ duration: 0.2 }}
                     >
-                      <div className="space-y-2 pt-5">
+                      <div className="space-y-2 pt-5 pb-2">
                         <div className="flex items-center justify-between">
                           <Label>Dot Scale</Label>
                           <span className="text-muted-foreground text-sm tabular-nums">
@@ -438,6 +540,12 @@ export default function Home(): React.ReactElement {
                       ))}
                     </SelectContent>
                   </Select>
+                  <p className="text-muted-foreground pt-2 text-sm">
+                    Output resolution:{" "}
+                    <span className="text-foreground/85 font-mono">
+                      {width} x {height}
+                    </span>
+                  </p>
                 </div>
 
                 <AnimatePresence>
@@ -450,7 +558,7 @@ export default function Home(): React.ReactElement {
                       exit="hidden"
                       transition={{ duration: 0.2 }}
                     >
-                      <div className="grid grid-cols-2 gap-3 pt-4">
+                      <div className="grid grid-cols-1 gap-3 pt-4 sm:grid-cols-2">
                         <div className="space-y-2">
                           <Label htmlFor="width">Width</Label>
                           <Input
@@ -476,11 +584,23 @@ export default function Home(): React.ReactElement {
               </section>
 
               {/* API URL */}
-              <section className="glass rounded-2xl p-5">
+              <section className="glass hidden rounded-2xl p-5 lg:block">
                 <p className="section-label mb-3">Your Wallpaper URL</p>
                 <div className="flex gap-2">
-                  <Input readOnly value={apiUrl} className="min-w-0 font-mono text-xs" />
-                  <Button variant="outline" size="icon" onClick={handleCopy} className="shrink-0">
+                  <Input
+                    readOnly
+                    value={apiUrl}
+                    placeholder="Preparing absolute URL..."
+                    className="min-w-0 font-mono text-xs"
+                  />
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={handleCopy}
+                    aria-label="Copy wallpaper link"
+                    disabled={!hasAbsoluteApiUrl}
+                    className="shrink-0"
+                  >
                     {copied ? (
                       <Check className="h-4 w-4 text-green-500" />
                     ) : (
@@ -496,17 +616,25 @@ export default function Home(): React.ReactElement {
           <motion.div
             className="mt-16"
             initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.5 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.35, ease: [0.16, 1, 0.3, 1] }}
           >
             <SetupGuide apiUrl={apiUrl} />
           </motion.div>
         </main>
 
         {/* Footer */}
-        <footer className="border-border/50 text-muted-foreground relative border-t py-8 text-center text-sm">
-          Made with care
+        <footer className="border-border/50 relative mt-12 border-t">
+          <div className="via-primary/45 absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent to-transparent" />
+          <div
+            className="mx-auto flex max-w-6xl flex-col items-center gap-1 px-6 pt-6 text-center"
+            style={{ paddingBottom: "calc(1.75rem + var(--safe-area-bottom))" }}
+          >
+            <p className="text-foreground text-sm font-medium">Life Calendar</p>
+            <p className="text-muted-foreground text-sm">
+              Dynamic wallpapers that stay in sync with your timeline.
+            </p>
+          </div>
         </footer>
       </div>
     </MotionConfig>

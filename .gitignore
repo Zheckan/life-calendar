@@ -51,3 +51,6 @@ next-env.d.ts
 
 # VSCode
 .vscode/
+
+# Temp screenshots and local QA artifacts
+/temp/

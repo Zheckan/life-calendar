@@ -49,6 +49,7 @@
 
 :root {
   --radius: 0.625rem;
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
   --background: oklch(0.985 0.003 85);
   --foreground: oklch(0.14 0 0);
   --card: oklch(1 0 0);

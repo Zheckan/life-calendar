@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
@@ -19,6 +19,12 @@ export const metadata: Metadata = {
   description: "Visualize your life in dots. Dynamic calendar wallpapers that update daily.",
 };
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -26,7 +32,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
-      <body className={`${inter.variable} ${plusJakartaSans.variable} antialiased`}>
+      <body
+        className={`${inter.variable} ${plusJakartaSans.variable} bg-background min-h-[100svh] overflow-x-hidden antialiased`}
+      >
         {children}
         <Analytics />
       </body>
