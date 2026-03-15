@@ -19,8 +19,13 @@ function StepBadge({ number }: { number: number }): React.ReactElement {
 
 function CopyUrlButton({ url }: { url: string }): React.ReactElement {
   const [copied, setCopied] = useState(false);
+  const canCopy = url.length > 0;
 
   const handleCopy = async () => {
+    if (!canCopy) {
+      return;
+    }
+
     await navigator.clipboard.writeText(url);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -29,9 +34,16 @@ function CopyUrlButton({ url }: { url: string }): React.ReactElement {
   return (
     <div className="my-3 flex items-center gap-2">
       <code className="bg-muted/50 text-foreground min-w-0 flex-1 rounded-lg px-3 py-2 font-mono text-xs break-all">
-        {url}
+        {canCopy ? url : "Preparing absolute URL..."}
       </code>
-      <Button variant="outline" size="icon" onClick={handleCopy} className="shrink-0">
+      <Button
+        variant="outline"
+        size="icon"
+        onClick={handleCopy}
+        aria-label="Copy wallpaper URL"
+        disabled={!canCopy}
+        className="shrink-0"
+      >
         {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
       </Button>
     </div>
