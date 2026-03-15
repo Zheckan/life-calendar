@@ -34,6 +34,7 @@ const FADE_VARIANTS = {
 };
 
 interface ColorControlProps {
+  id: string;
   label: string;
   pickerValue: string;
   textPlaceholder: string;
@@ -43,6 +44,7 @@ interface ColorControlProps {
 }
 
 function ColorControl({
+  id,
   label,
   pickerValue,
   textPlaceholder,
@@ -52,7 +54,9 @@ function ColorControl({
 }: ColorControlProps): React.ReactElement {
   return (
     <div className="space-y-1.5">
-      <Label className="text-muted-foreground text-xs">{label}</Label>
+      <Label htmlFor={id} className="text-muted-foreground text-xs">
+        {label}
+      </Label>
       <div className="flex gap-1.5">
         <label className="border-input bg-input/30 relative block h-9 w-9 shrink-0 overflow-hidden rounded-md border">
           <input
@@ -68,6 +72,7 @@ function ColorControl({
           />
         </label>
         <Input
+          id={id}
           type="text"
           placeholder={textPlaceholder}
           value={textValue}
@@ -146,7 +151,8 @@ export default function Home(): React.ReactElement {
   ]);
 
   const imageSrc = `/og/${width}x${height}?${queryString}`;
-  const apiUrl = `${origin}/og/${width}x${height}?${queryString}`;
+  const apiUrl = origin ? `${origin}${imageSrc}` : "";
+  const hasAbsoluteApiUrl = apiUrl.length > 0;
   const previewDeviceLabel = phoneModel === "Custom" ? "Custom Resolution" : phoneModel;
   const selectedViewOption = VIEW_OPTIONS.find((option) => option.value === view);
   const imageLoading = loadedImageSrc !== imageSrc;
@@ -166,6 +172,10 @@ export default function Home(): React.ReactElement {
   };
 
   const handleCopy = async () => {
+    if (!hasAbsoluteApiUrl) {
+      return;
+    }
+
     await navigator.clipboard.writeText(apiUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -224,6 +234,7 @@ export default function Home(): React.ReactElement {
                     variant="outline"
                     size="sm"
                     onClick={handleCopy}
+                    disabled={!hasAbsoluteApiUrl}
                     className="h-8 rounded-full px-3 text-xs"
                   >
                     {copied ? (
@@ -272,8 +283,20 @@ export default function Home(): React.ReactElement {
                 <div className="mt-4 lg:hidden">
                   <p className="section-label mb-2">Wallpaper Link</p>
                   <div className="flex gap-2">
-                    <Input readOnly value={apiUrl} className="min-w-0 font-mono text-xs" />
-                    <Button variant="outline" size="icon" onClick={handleCopy} className="shrink-0">
+                    <Input
+                      readOnly
+                      value={apiUrl}
+                      placeholder="Preparing absolute URL..."
+                      className="min-w-0 font-mono text-xs"
+                    />
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={handleCopy}
+                      aria-label="Copy wallpaper link"
+                      disabled={!hasAbsoluteApiUrl}
+                      className="shrink-0"
+                    >
                       {copied ? (
                         <Check className="h-4 w-4 text-green-500" />
                       ) : (
@@ -440,6 +463,7 @@ export default function Home(): React.ReactElement {
                   </div>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                     <ColorControl
+                      id="accentColor"
                       label="Accent"
                       pickerValue={accentColor || defaultAccentColor}
                       textPlaceholder={defaultAccentColor}
@@ -448,6 +472,7 @@ export default function Home(): React.ReactElement {
                       onTextChange={setAccentColor}
                     />
                     <ColorControl
+                      id="backgroundColor"
                       label="Background"
                       pickerValue={bgColor || defaultBgColor}
                       textPlaceholder={defaultBgColor}
@@ -456,6 +481,7 @@ export default function Home(): React.ReactElement {
                       onTextChange={setBgColor}
                     />
                     <ColorControl
+                      id="dotColor"
                       label="Dots"
                       pickerValue={dotColor || defaultDotColor}
                       textPlaceholder="auto"
@@ -561,8 +587,20 @@ export default function Home(): React.ReactElement {
               <section className="glass hidden rounded-2xl p-5 lg:block">
                 <p className="section-label mb-3">Your Wallpaper URL</p>
                 <div className="flex gap-2">
-                  <Input readOnly value={apiUrl} className="min-w-0 font-mono text-xs" />
-                  <Button variant="outline" size="icon" onClick={handleCopy} className="shrink-0">
+                  <Input
+                    readOnly
+                    value={apiUrl}
+                    placeholder="Preparing absolute URL..."
+                    className="min-w-0 font-mono text-xs"
+                  />
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={handleCopy}
+                    aria-label="Copy wallpaper link"
+                    disabled={!hasAbsoluteApiUrl}
+                    className="shrink-0"
+                  >
                     {copied ? (
                       <Check className="h-4 w-4 text-green-500" />
                     ) : (
