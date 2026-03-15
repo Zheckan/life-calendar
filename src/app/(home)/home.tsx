@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence, MotionConfig } from "framer-motion";
+import { DesktopColorPicker } from "@/components/color-picker";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -27,11 +28,16 @@ const VIEW_OPTIONS: { value: CalendarView; label: string; description: string }[
 ];
 
 const WEEK_START_VIEWS: CalendarView[] = ["months", "quarters"];
+const HEX_COLOR_RE = /^#[0-9A-F]{6}$/i;
 
 const FADE_VARIANTS = {
   hidden: { opacity: 0, height: 0 },
   visible: { opacity: 1, height: "auto" as const },
 };
+
+function resolvePickerColor(value: string, fallback: string): string {
+  return HEX_COLOR_RE.test(value) ? value.toUpperCase() : fallback;
+}
 
 interface ColorControlProps {
   label: string;
@@ -54,7 +60,7 @@ function ColorControl({
     <div className="space-y-1.5">
       <Label className="text-muted-foreground text-xs">{label}</Label>
       <div className="flex gap-1.5">
-        <label className="border-input bg-input/30 relative block h-9 w-9 shrink-0 overflow-hidden rounded-md border">
+        <label className="border-input bg-input/30 relative block h-9 w-9 shrink-0 overflow-hidden rounded-md border md:hidden">
           <input
             type="color"
             value={pickerValue}
@@ -67,6 +73,7 @@ function ColorControl({
             style={{ backgroundColor: pickerValue }}
           />
         </label>
+        <DesktopColorPicker label={label} value={pickerValue} onChange={onPickerChange} />
         <Input
           type="text"
           placeholder={textPlaceholder}
@@ -153,6 +160,9 @@ export default function Home(): React.ReactElement {
   const defaultAccentColor = theme === "light" ? "#F97316" : "#F56B3F";
   const defaultBgColor = theme === "light" ? "#F5F5F7" : "#1A1A1A";
   const defaultDotColor = theme === "light" ? "#D1D5DB" : "#404040";
+  const accentPickerColor = resolvePickerColor(accentColor, defaultAccentColor);
+  const bgPickerColor = resolvePickerColor(bgColor, defaultBgColor);
+  const dotPickerColor = resolvePickerColor(dotColor, defaultDotColor);
 
   const handlePhoneChange = (value: string) => {
     setPhoneModel(value);
@@ -441,7 +451,7 @@ export default function Home(): React.ReactElement {
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                     <ColorControl
                       label="Accent"
-                      pickerValue={accentColor || defaultAccentColor}
+                      pickerValue={accentPickerColor}
                       textPlaceholder={defaultAccentColor}
                       textValue={accentColor}
                       onPickerChange={setAccentColor}
@@ -449,7 +459,7 @@ export default function Home(): React.ReactElement {
                     />
                     <ColorControl
                       label="Background"
-                      pickerValue={bgColor || defaultBgColor}
+                      pickerValue={bgPickerColor}
                       textPlaceholder={defaultBgColor}
                       textValue={bgColor}
                       onPickerChange={setBgColor}
@@ -457,7 +467,7 @@ export default function Home(): React.ReactElement {
                     />
                     <ColorControl
                       label="Dots"
-                      pickerValue={dotColor || defaultDotColor}
+                      pickerValue={dotPickerColor}
                       textPlaceholder="auto"
                       textValue={dotColor}
                       onPickerChange={setDotColor}
