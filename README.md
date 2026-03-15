@@ -52,6 +52,9 @@ For anything else:
 5. Commit your changes (we use [Conventional Commits](https://www.conventionalcommits.org/))
 6. Push to the branch and open a Pull Request
 
+Agent docs note: `CLAUDE.md` is intentionally a symlink to `AGENTS.md` so there is one source of truth.
+If your checkout or tools do not preserve symlinks, read `AGENTS.md` directly or recreate the link locally.
+
 ## License
 
 ### I have no idea what license to use, probably MIT (after small research). Just don't be cunts or russians, russians can go and fuck themselves.

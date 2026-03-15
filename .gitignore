@@ -43,6 +43,9 @@ next-env.d.ts
 # playwright
 .playwright-mcp/
 
+# agent temp artifacts
+.tmp/
+
 # Claude
 .claude/
 
