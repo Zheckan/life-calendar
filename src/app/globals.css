@@ -175,9 +175,10 @@
 
 .color-picker-slider::-webkit-slider-runnable-track {
   height: 0.5rem;
-  border: 1px solid var(--input);
+  border: 0;
   border-radius: 9999px;
   background: var(--slider-track, var(--muted));
+  box-shadow: 0 0 0 1px var(--input);
 }
 
 .color-picker-slider::-webkit-slider-thumb {
@@ -195,9 +196,10 @@
 
 .color-picker-slider::-moz-range-track {
   height: 0.5rem;
-  border: 1px solid var(--input);
+  border: 0;
   border-radius: 9999px;
   background: var(--slider-track, var(--muted));
+  box-shadow: 0 0 0 1px var(--input);
 }
 
 .color-picker-slider::-moz-range-progress {
