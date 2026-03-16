@@ -195,10 +195,10 @@ export default function Home(): React.ReactElement {
 
   return (
     <MotionConfig reducedMotion="user">
-      <div className="relative min-h-[100svh]">
+      <div className="min-dynamic-screen relative">
         {/* Background dot grid */}
-        <div className="dot-grid pointer-events-none fixed inset-0" />
-        <div className="from-background/0 via-background/60 to-background pointer-events-none fixed inset-0 bg-gradient-to-b" />
+        <div className="dot-grid pointer-events-none absolute inset-0 md:fixed" />
+        <div className="from-background/0 via-background/60 to-background pointer-events-none absolute inset-0 bg-gradient-to-b md:fixed" />
 
         {/* Hero */}
         <motion.header
