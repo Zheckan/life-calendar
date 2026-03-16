@@ -227,7 +227,7 @@ export function DesktopColorPicker({ label, value, onChange }: DesktopColorPicke
         >
           <div className="mb-3 flex items-center gap-3">
             <div
-              className="border-input h-11 w-11 rounded-xl border shadow-inner"
+              className="border-input h-11 w-11 rounded-full border shadow-inner"
               style={{ backgroundColor: value }}
             />
             <div className="min-w-0">
@@ -238,7 +238,7 @@ export function DesktopColorPicker({ label, value, onChange }: DesktopColorPicke
             </div>
           </div>
 
-          <div className="grid grid-cols-6 gap-1.5">
+          <div className="grid grid-cols-6 gap-2">
             {COLOR_SWATCHES.map((swatch) => {
               const selected = swatch === value;
               return (
@@ -247,13 +247,24 @@ export function DesktopColorPicker({ label, value, onChange }: DesktopColorPicke
                   type="button"
                   aria-label={`Use ${swatch} for ${label}`}
                   onClick={() => onChange(swatch)}
-                  className={`h-8 rounded-lg border transition-transform hover:scale-[1.03] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden ${
+                  className={`appearance-none justify-self-center rounded-full border-0 bg-transparent p-0 transition-transform focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black focus-visible:outline-hidden ${
                     selected
-                      ? "border-foreground ring-2 ring-offset-1"
-                      : "border-border ring-0 ring-offset-0"
+                      ? "scale-110 ring-2 ring-white ring-offset-2 ring-offset-black"
+                      : "ring-0 ring-offset-0 hover:scale-105"
                   }`}
-                  style={{ backgroundColor: swatch }}
-                />
+                  style={{ width: "2rem", height: "2rem" }}
+                >
+                  <span
+                    aria-hidden="true"
+                    className="block h-7 w-7 rounded-full"
+                    style={{
+                      backgroundColor: swatch,
+                      boxShadow:
+                        "inset 0 1px 0 rgba(255,255,255,0.18), 0 0 0 1px rgba(148,163,184,0.22)",
+                    }}
+                  />
+                  <span className="sr-only">{swatch}</span>
+                </button>
               );
             })}
           </div>
