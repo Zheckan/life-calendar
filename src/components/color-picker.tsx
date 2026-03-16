@@ -1,6 +1,15 @@
 "use client";
 
-import { useEffect, useId, useMemo, useRef, useState, type CSSProperties } from "react";
+import {
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
+import { createPortal } from "react-dom";
 
 import { Button } from "@/components/ui/button";
 
@@ -39,6 +48,12 @@ interface ColorChannelSliderProps {
   max: number;
   onChange: (value: number) => void;
   style?: CSSProperties & { "--slider-track"?: string };
+}
+
+interface PopoverPosition {
+  top: number;
+  left: number;
+  width: number;
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -170,9 +185,55 @@ function ColorChannelSlider({ label, value, min, max, onChange, style }: ColorCh
 
 export function DesktopColorPicker({ label, value, onChange }: DesktopColorPickerProps) {
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [position, setPosition] = useState<PopoverPosition | null>(null);
+  const triggerRef = useRef<HTMLDivElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
   const current = useMemo(() => hexToHsl(value), [value]);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!open || !mounted) {
+      return;
+    }
+
+    const updatePosition = () => {
+      if (!triggerRef.current) {
+        return;
+      }
+
+      const viewportPadding = 16;
+      const popoverWidth = Math.min(288, window.innerWidth - viewportPadding * 2);
+      const rect = triggerRef.current.getBoundingClientRect();
+      const popoverHeight = popoverRef.current?.offsetHeight ?? 360;
+      const left = clamp(
+        rect.right - popoverWidth,
+        viewportPadding,
+        window.innerWidth - popoverWidth - viewportPadding,
+      );
+      const spaceBelow = window.innerHeight - rect.bottom - viewportPadding;
+      const top =
+        spaceBelow < popoverHeight + 8 && rect.top > popoverHeight + viewportPadding
+          ? Math.max(viewportPadding, rect.top - popoverHeight - 8)
+          : Math.min(window.innerHeight - popoverHeight - viewportPadding, rect.bottom + 8);
+
+      setPosition({ top, left, width: popoverWidth });
+    };
+
+    updatePosition();
+
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [mounted, open]);
 
   useEffect(() => {
     if (!open) {
@@ -184,9 +245,14 @@ export function DesktopColorPicker({ label, value, onChange }: DesktopColorPicke
         return;
       }
 
-      if (!popoverRef.current?.contains(event.target)) {
-        setOpen(false);
+      if (
+        triggerRef.current?.contains(event.target) ||
+        popoverRef.current?.contains(event.target)
+      ) {
+        return;
       }
+
+      setOpen(false);
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -210,7 +276,7 @@ export function DesktopColorPicker({ label, value, onChange }: DesktopColorPicke
   };
 
   return (
-    <div ref={popoverRef} className="relative hidden md:block">
+    <div ref={triggerRef} className="hidden md:block">
       <Button
         type="button"
         variant="outline"
@@ -227,92 +293,101 @@ export function DesktopColorPicker({ label, value, onChange }: DesktopColorPicke
         />
       </Button>
 
-      {open && (
-        <div
-          role="dialog"
-          aria-modal="false"
-          aria-labelledby={titleId}
-          className="bg-popover/96 border-border absolute top-full right-0 z-30 mt-2 w-72 rounded-2xl border p-3 shadow-[0_24px_70px_-32px_rgba(15,23,42,0.55)] backdrop-blur"
-        >
-          <div className="mb-3 flex items-center gap-3">
+      {mounted && open && position
+        ? createPortal(
             <div
-              className="border-input h-11 w-11 rounded-full border shadow-inner"
-              style={{ backgroundColor: value }}
-            />
-            <div className="min-w-0">
-              <p id={titleId} className="text-sm font-medium">
-                {label}
-              </p>
-              <p className="text-muted-foreground font-mono text-xs">{value}</p>
-            </div>
-          </div>
+              ref={popoverRef}
+              role="dialog"
+              aria-modal="false"
+              aria-labelledby={titleId}
+              className="bg-popover/96 border-border fixed z-[1000] rounded-2xl border p-3 shadow-[0_24px_70px_-32px_rgba(15,23,42,0.55)] backdrop-blur"
+              style={{
+                top: position.top,
+                left: position.left,
+                width: position.width,
+              }}
+            >
+              <div className="mb-3 flex items-center gap-3">
+                <div
+                  className="border-input h-11 w-11 rounded-full border shadow-inner"
+                  style={{ backgroundColor: value }}
+                />
+                <div className="min-w-0">
+                  <p id={titleId} className="text-sm font-medium">
+                    {label}
+                  </p>
+                  <p className="text-muted-foreground font-mono text-xs">{value}</p>
+                </div>
+              </div>
 
-          <div className="grid grid-cols-6 gap-2">
-            {COLOR_SWATCHES.map((swatch) => {
-              const selected = swatch === value;
-              return (
-                <button
-                  key={swatch}
-                  type="button"
-                  aria-label={`Use ${swatch} for ${label}`}
-                  onClick={() => onChange(swatch)}
-                  className={`appearance-none justify-self-center rounded-full border-0 bg-transparent p-0 transition-transform focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black focus-visible:outline-hidden ${
-                    selected
-                      ? "scale-110 ring-2 ring-white ring-offset-2 ring-offset-black"
-                      : "ring-0 ring-offset-0 hover:scale-105"
-                  }`}
-                  style={{ width: "2rem", height: "2rem" }}
-                >
-                  <span
-                    aria-hidden="true"
-                    className="block h-7 w-7 rounded-full"
-                    style={{
-                      backgroundColor: swatch,
-                      boxShadow:
-                        "inset 0 1px 0 rgba(255,255,255,0.18), 0 0 0 1px rgba(148,163,184,0.22)",
-                    }}
-                  />
-                  <span className="sr-only">{swatch}</span>
-                </button>
-              );
-            })}
-          </div>
+              <div className="grid grid-cols-6 gap-2">
+                {COLOR_SWATCHES.map((swatch) => {
+                  const selected = swatch === value;
+                  return (
+                    <button
+                      key={swatch}
+                      type="button"
+                      aria-label={`Use ${swatch} for ${label}`}
+                      onClick={() => onChange(swatch)}
+                      className={`appearance-none justify-self-center rounded-full border-0 bg-transparent p-0 transition-transform focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black focus-visible:outline-hidden ${
+                        selected
+                          ? "scale-110 ring-2 ring-white ring-offset-2 ring-offset-black"
+                          : "ring-0 ring-offset-0 hover:scale-105"
+                      }`}
+                      style={{ width: "2rem", height: "2rem" }}
+                    >
+                      <span
+                        aria-hidden="true"
+                        className="block h-7 w-7 rounded-full"
+                        style={{
+                          backgroundColor: swatch,
+                          boxShadow:
+                            "inset 0 1px 0 rgba(255,255,255,0.18), 0 0 0 1px rgba(148,163,184,0.22)",
+                        }}
+                      />
+                      <span className="sr-only">{swatch}</span>
+                    </button>
+                  );
+                })}
+              </div>
 
-          <div className="mt-4 space-y-3">
-            <ColorChannelSlider
-              label="Hue"
-              value={current.h}
-              min={0}
-              max={359}
-              onChange={(nextHue) => setChannel({ h: nextHue })}
-              style={{
-                "--slider-track":
-                  "linear-gradient(90deg, #FF0000 0%, #FFFF00 17%, #00FF00 33%, #00FFFF 50%, #0000FF 67%, #FF00FF 83%, #FF0000 100%)",
-              }}
-            />
-            <ColorChannelSlider
-              label="Saturation"
-              value={current.s}
-              min={0}
-              max={100}
-              onChange={(nextSaturation) => setChannel({ s: nextSaturation })}
-              style={{
-                "--slider-track": `linear-gradient(90deg, ${hslToHex(current.h, 0, current.l)} 0%, ${hslToHex(current.h, 100, current.l)} 100%)`,
-              }}
-            />
-            <ColorChannelSlider
-              label="Lightness"
-              value={current.l}
-              min={0}
-              max={100}
-              onChange={(nextLightness) => setChannel({ l: nextLightness })}
-              style={{
-                "--slider-track": `linear-gradient(90deg, ${hslToHex(current.h, current.s, 0)} 0%, ${hslToHex(current.h, current.s, 50)} 50%, ${hslToHex(current.h, current.s, 100)} 100%)`,
-              }}
-            />
-          </div>
-        </div>
-      )}
+              <div className="mt-4 space-y-3">
+                <ColorChannelSlider
+                  label="Hue"
+                  value={current.h}
+                  min={0}
+                  max={359}
+                  onChange={(nextHue) => setChannel({ h: nextHue })}
+                  style={{
+                    "--slider-track":
+                      "linear-gradient(90deg, #FF0000 0%, #FFFF00 17%, #00FF00 33%, #00FFFF 50%, #0000FF 67%, #FF00FF 83%, #FF0000 100%)",
+                  }}
+                />
+                <ColorChannelSlider
+                  label="Saturation"
+                  value={current.s}
+                  min={0}
+                  max={100}
+                  onChange={(nextSaturation) => setChannel({ s: nextSaturation })}
+                  style={{
+                    "--slider-track": `linear-gradient(90deg, ${hslToHex(current.h, 0, current.l)} 0%, ${hslToHex(current.h, 100, current.l)} 100%)`,
+                  }}
+                />
+                <ColorChannelSlider
+                  label="Lightness"
+                  value={current.l}
+                  min={0}
+                  max={100}
+                  onChange={(nextLightness) => setChannel({ l: nextLightness })}
+                  style={{
+                    "--slider-track": `linear-gradient(90deg, ${hslToHex(current.h, current.s, 0)} 0%, ${hslToHex(current.h, current.s, 50)} 50%, ${hslToHex(current.h, current.s, 100)} 100%)`,
+                  }}
+                />
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
     </div>
   );
 }
