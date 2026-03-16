@@ -455,11 +455,16 @@ export default function Home(): React.ReactElement {
                 <div className="mt-5 space-y-3">
                   <div className="flex items-center justify-between">
                     <Label>Custom Colors</Label>
-                    {hasCustomColors && (
+                    <div className="flex min-h-7 min-w-[4.75rem] items-center justify-end">
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-7 gap-1 text-xs"
+                        disabled={!hasCustomColors}
+                        tabIndex={hasCustomColors ? 0 : -1}
+                        aria-hidden={!hasCustomColors}
+                        className={`h-7 gap-1 text-xs transition-opacity ${
+                          hasCustomColors ? "opacity-100" : "pointer-events-none opacity-0"
+                        }`}
                         onClick={() => {
                           setAccentColor("");
                           setBgColor("");
@@ -469,7 +474,7 @@ export default function Home(): React.ReactElement {
                         <RotateCcw className="h-3 w-3" />
                         Reset
                       </Button>
-                    )}
+                    </div>
                   </div>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                     <ColorControl
