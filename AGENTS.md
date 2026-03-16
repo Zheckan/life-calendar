@@ -65,3 +65,5 @@ Suggested format:
 - `YYYY-MM-DD` - what surprised you, why it mattered, and how to avoid the issue next time.
 
 <!-- Add entries here as you discover them -->
+
+- 2026-03-16 - Native `input[type="date"]` controls rendered inconsistently across mobile Safari and Firefox in the home form; prefer the shared shadcn `Calendar` + `Popover` date picker instead of trying to skin the native control.

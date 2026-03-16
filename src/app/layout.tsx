@@ -33,7 +33,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body
-        className={`${inter.variable} ${plusJakartaSans.variable} bg-background min-h-[100svh] overflow-x-hidden antialiased`}
+        className={`${inter.variable} ${plusJakartaSans.variable} bg-background min-dynamic-screen overflow-x-hidden antialiased`}
       >
         {children}
         <Analytics />

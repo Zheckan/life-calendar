@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { motion, AnimatePresence, MotionConfig } from "framer-motion";
+import { DesktopColorPicker } from "@/components/color-picker";
+import { DatePickerField } from "@/components/date-picker-field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -16,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Copy, Check, Loader2, RotateCcw } from "lucide-react";
 import { SetupGuide } from "@/components/setup-guide";
 import type { CalendarView, WeekStart } from "@/lib/calendar-utils";
+import { getAutoDotColor, normalizeHexColor } from "@/lib/colors";
 import { SCREEN_RESOLUTIONS } from "@/lib/screen-resolutions";
 
 const VIEW_OPTIONS: { value: CalendarView; label: string; description: string }[] = [
@@ -27,11 +30,14 @@ const VIEW_OPTIONS: { value: CalendarView; label: string; description: string }[
 ];
 
 const WEEK_START_VIEWS: CalendarView[] = ["months", "quarters"];
-
 const FADE_VARIANTS = {
   hidden: { opacity: 0, height: 0 },
   visible: { opacity: 1, height: "auto" as const },
 };
+
+function resolvePickerColor(value: string, fallback: string): string {
+  return normalizeHexColor(value) ?? fallback;
+}
 
 interface ColorControlProps {
   id: string;
@@ -58,7 +64,7 @@ function ColorControl({
         {label}
       </Label>
       <div className="flex gap-1.5">
-        <label className="border-input bg-input/30 relative block h-9 w-9 shrink-0 overflow-hidden rounded-md border">
+        <label className="border-input bg-input/30 relative block h-9 w-9 shrink-0 overflow-hidden rounded-md border md:hidden">
           <input
             type="color"
             value={pickerValue}
@@ -71,6 +77,7 @@ function ColorControl({
             style={{ backgroundColor: pickerValue }}
           />
         </label>
+        <DesktopColorPicker label={label} value={pickerValue} onChange={onPickerChange} />
         <Input
           id={id}
           type="text"
@@ -102,6 +109,7 @@ export default function Home(): React.ReactElement {
   const [copied, setCopied] = useState(false);
   const [loadedImageSrc, setLoadedImageSrc] = useState("");
   const [origin, setOrigin] = useState("");
+  const previewImageRef = useRef<HTMLImageElement>(null);
 
   useEffect(() => {
     setOrigin(window.location.origin);
@@ -155,10 +163,25 @@ export default function Home(): React.ReactElement {
   const hasAbsoluteApiUrl = apiUrl.length > 0;
   const previewDeviceLabel = phoneModel === "Custom" ? "Custom Resolution" : phoneModel;
   const selectedViewOption = VIEW_OPTIONS.find((option) => option.value === view);
-  const imageLoading = loadedImageSrc !== imageSrc;
+  const hasLoadedPreview = loadedImageSrc.length > 0;
+  const imageRefreshing = hasLoadedPreview && loadedImageSrc !== imageSrc;
   const defaultAccentColor = theme === "light" ? "#F97316" : "#F56B3F";
   const defaultBgColor = theme === "light" ? "#F5F5F7" : "#1A1A1A";
-  const defaultDotColor = theme === "light" ? "#D1D5DB" : "#404040";
+  const autoDotColor = getAutoDotColor(theme, bgColor);
+  const accentPickerColor = resolvePickerColor(accentColor, defaultAccentColor);
+  const bgPickerColor = resolvePickerColor(bgColor, defaultBgColor);
+  const dotPickerColor = resolvePickerColor(dotColor, autoDotColor);
+
+  useEffect(() => {
+    const previewImage = previewImageRef.current;
+    if (
+      previewImage?.complete &&
+      previewImage.naturalWidth > 0 &&
+      previewImage.getAttribute("src") === imageSrc
+    ) {
+      setLoadedImageSrc(imageSrc);
+    }
+  }, [imageSrc]);
 
   const handlePhoneChange = (value: string) => {
     setPhoneModel(value);
@@ -185,10 +208,10 @@ export default function Home(): React.ReactElement {
 
   return (
     <MotionConfig reducedMotion="user">
-      <div className="relative min-h-[100svh]">
+      <div className="min-dynamic-screen relative">
         {/* Background dot grid */}
-        <div className="dot-grid pointer-events-none fixed inset-0" />
-        <div className="from-background/0 via-background/60 to-background pointer-events-none fixed inset-0 bg-gradient-to-b" />
+        <div className="dot-grid pointer-events-none absolute inset-0 md:fixed" />
+        <div className="from-background/0 via-background/60 to-background pointer-events-none absolute inset-0 bg-gradient-to-b md:fixed" />
 
         {/* Hero */}
         <motion.header
@@ -256,8 +279,19 @@ export default function Home(): React.ReactElement {
                     className="border-border/70 relative w-full max-w-[min(100%,20.5rem)] overflow-hidden rounded-[2rem] border bg-black shadow-[0_30px_90px_-45px_rgba(0,0,0,0.95)] lg:max-w-[19.75rem] xl:max-w-[20rem]"
                     style={{ aspectRatio: `${width} / ${height}` }}
                   >
+                    {!hasLoadedPreview && (
+                      <div className="absolute inset-0 z-10 flex items-center justify-center px-6 text-center">
+                        <div className="max-w-[15rem] space-y-2">
+                          <p className="text-foreground/90 text-sm font-medium">Live preview</p>
+                          <p className="text-muted-foreground text-xs leading-relaxed">
+                            Your wallpaper preview appears here and updates after you change the
+                            settings.
+                          </p>
+                        </div>
+                      </div>
+                    )}
                     <AnimatePresence>
-                      {imageLoading && (
+                      {imageRefreshing && (
                         <motion.div
                           className="bg-muted/50 absolute inset-0 z-10 flex items-center justify-center"
                           initial={{ opacity: 0 }}
@@ -269,6 +303,7 @@ export default function Home(): React.ReactElement {
                       )}
                     </AnimatePresence>
                     <img
+                      ref={previewImageRef}
                       src={imageSrc}
                       alt="Calendar preview"
                       className="absolute inset-0 block h-full w-full object-cover"
@@ -319,7 +354,7 @@ export default function Home(): React.ReactElement {
               <section className="glass rounded-2xl p-5">
                 <p className="section-label mb-4">Calendar Type</p>
                 <Select value={view} onValueChange={(v) => setView(v as CalendarView)}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full sm:w-fit">
                     <SelectValue>{selectedViewOption?.label}</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
@@ -349,15 +384,13 @@ export default function Home(): React.ReactElement {
                       exit="hidden"
                       transition={{ duration: 0.2 }}
                     >
-                      <div className="space-y-2 pt-4">
-                        <Label htmlFor="birthday">Birthday</Label>
-                        <Input
-                          id="birthday"
-                          type="date"
-                          value={birthday}
-                          onChange={(e) => setBirthday(e.target.value)}
-                        />
-                      </div>
+                      <DatePickerField
+                        id="birthday"
+                        label="Birthday"
+                        value={birthday}
+                        onChange={setBirthday}
+                        className="pt-4"
+                      />
                     </motion.div>
                   )}
 
@@ -371,8 +404,8 @@ export default function Home(): React.ReactElement {
                       exit="hidden"
                       transition={{ duration: 0.2 }}
                     >
-                      <div className="space-y-4 pt-4">
-                        <div className="space-y-2">
+                      <div className="grid gap-3 pt-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)_minmax(0,1fr)] lg:items-end">
+                        <div className="space-y-2 lg:min-w-0">
                           <Label htmlFor="goalTitle">Goal Title</Label>
                           <Input
                             id="goalTitle"
@@ -382,25 +415,21 @@ export default function Home(): React.ReactElement {
                             onChange={(e) => setGoalTitle(e.target.value)}
                           />
                         </div>
-                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                          <div className="space-y-2">
-                            <Label htmlFor="goalStart">Start Date</Label>
-                            <Input
-                              id="goalStart"
-                              type="date"
-                              value={goalStart}
-                              onChange={(e) => setGoalStart(e.target.value)}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="goalEnd">End Date</Label>
-                            <Input
-                              id="goalEnd"
-                              type="date"
-                              value={goalEnd}
-                              onChange={(e) => setGoalEnd(e.target.value)}
-                            />
-                          </div>
+                        <div className="grid gap-3 lg:contents">
+                          <DatePickerField
+                            id="goalStart"
+                            label="Start Date"
+                            value={goalStart}
+                            onChange={setGoalStart}
+                            className="lg:min-w-0"
+                          />
+                          <DatePickerField
+                            id="goalEnd"
+                            label="End Date"
+                            value={goalEnd}
+                            onChange={setGoalEnd}
+                            className="lg:min-w-0"
+                          />
                         </div>
                       </div>
                     </motion.div>
@@ -417,7 +446,7 @@ export default function Home(): React.ReactElement {
                     <div className="space-y-2">
                       <Label>Week Start</Label>
                       <Select value={weekStart} onValueChange={(v) => setWeekStart(v as WeekStart)}>
-                        <SelectTrigger>
+                        <SelectTrigger className="w-full sm:w-fit">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -430,7 +459,7 @@ export default function Home(): React.ReactElement {
                   <div className="space-y-2">
                     <Label>Theme</Label>
                     <Select value={theme} onValueChange={(v) => setTheme(v as "dark" | "light")}>
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full sm:w-fit">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -445,11 +474,16 @@ export default function Home(): React.ReactElement {
                 <div className="mt-5 space-y-3">
                   <div className="flex items-center justify-between">
                     <Label>Custom Colors</Label>
-                    {hasCustomColors && (
+                    <div className="flex min-h-7 min-w-[4.75rem] items-center justify-end">
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-7 gap-1 text-xs"
+                        disabled={!hasCustomColors}
+                        tabIndex={hasCustomColors ? 0 : -1}
+                        aria-hidden={!hasCustomColors}
+                        className={`h-7 gap-1 text-xs transition-opacity ${
+                          hasCustomColors ? "opacity-100" : "pointer-events-none opacity-0"
+                        }`}
                         onClick={() => {
                           setAccentColor("");
                           setBgColor("");
@@ -459,13 +493,13 @@ export default function Home(): React.ReactElement {
                         <RotateCcw className="h-3 w-3" />
                         Reset
                       </Button>
-                    )}
+                    </div>
                   </div>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                     <ColorControl
                       id="accentColor"
                       label="Accent"
-                      pickerValue={accentColor || defaultAccentColor}
+                      pickerValue={accentPickerColor}
                       textPlaceholder={defaultAccentColor}
                       textValue={accentColor}
                       onPickerChange={setAccentColor}
@@ -474,7 +508,7 @@ export default function Home(): React.ReactElement {
                     <ColorControl
                       id="backgroundColor"
                       label="Background"
-                      pickerValue={bgColor || defaultBgColor}
+                      pickerValue={bgPickerColor}
                       textPlaceholder={defaultBgColor}
                       textValue={bgColor}
                       onPickerChange={setBgColor}
@@ -483,7 +517,7 @@ export default function Home(): React.ReactElement {
                     <ColorControl
                       id="dotColor"
                       label="Dots"
-                      pickerValue={dotColor || defaultDotColor}
+                      pickerValue={dotPickerColor}
                       textPlaceholder="auto"
                       textValue={dotColor}
                       onPickerChange={setDotColor}
@@ -526,21 +560,31 @@ export default function Home(): React.ReactElement {
               {/* Display */}
               <section className="glass rounded-2xl p-5">
                 <p className="section-label mb-4">Display</p>
-                <div className="space-y-2">
-                  <Label>Phone Model</Label>
-                  <Select value={phoneModel} onValueChange={handlePhoneChange}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {SCREEN_RESOLUTIONS.map((r) => (
-                        <SelectItem key={r.name} value={r.name}>
-                          {r.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-muted-foreground pt-2 text-sm">
+                <div className="space-y-3">
+                  <div className="grid gap-3 lg:grid-cols-[minmax(0,16rem)_1fr] lg:items-end lg:gap-6">
+                    <div className="space-y-2">
+                      <Label>Phone Model</Label>
+                      <Select value={phoneModel} onValueChange={handlePhoneChange}>
+                        <SelectTrigger className="w-full lg:w-fit">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {SCREEN_RESOLUTIONS.map((r) => (
+                            <SelectItem key={r.name} value={r.name}>
+                              {r.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="hidden lg:flex lg:flex-col lg:items-end lg:justify-end">
+                      <p className="text-muted-foreground text-sm">Output resolution</p>
+                      <p className="text-foreground/85 font-mono text-lg leading-none">
+                        {width} x {height}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-muted-foreground text-sm lg:hidden">
                     Output resolution:{" "}
                     <span className="text-foreground/85 font-mono">
                       {width} x {height}
