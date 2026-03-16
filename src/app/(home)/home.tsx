@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Copy, Check, Loader2, RotateCcw } from "lucide-react";
 import { SetupGuide } from "@/components/setup-guide";
 import type { CalendarView, WeekStart } from "@/lib/calendar-utils";
-import { normalizeHexColor } from "@/lib/colors";
+import { getAutoDotColor, normalizeHexColor } from "@/lib/colors";
 import { SCREEN_RESOLUTIONS } from "@/lib/screen-resolutions";
 
 const VIEW_OPTIONS: { value: CalendarView; label: string; description: string }[] = [
@@ -167,10 +167,10 @@ export default function Home(): React.ReactElement {
   const imageRefreshing = hasLoadedPreview && loadedImageSrc !== imageSrc;
   const defaultAccentColor = theme === "light" ? "#F97316" : "#F56B3F";
   const defaultBgColor = theme === "light" ? "#F5F5F7" : "#1A1A1A";
-  const defaultDotColor = theme === "light" ? "#D1D5DB" : "#404040";
+  const autoDotColor = getAutoDotColor(theme, bgColor);
   const accentPickerColor = resolvePickerColor(accentColor, defaultAccentColor);
   const bgPickerColor = resolvePickerColor(bgColor, defaultBgColor);
-  const dotPickerColor = resolvePickerColor(dotColor, defaultDotColor);
+  const dotPickerColor = resolvePickerColor(dotColor, autoDotColor);
 
   useEffect(() => {
     const previewImage = previewImageRef.current;

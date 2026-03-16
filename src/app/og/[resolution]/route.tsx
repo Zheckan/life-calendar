@@ -9,7 +9,7 @@ import {
   type WeekStart,
   type DotState,
 } from "@/lib/calendar-utils";
-import { isValidHexColor } from "@/lib/colors";
+import { getAutoDotColor, isValidHexColor } from "@/lib/colors";
 
 interface ThemeColors {
   bg: string;
@@ -18,13 +18,6 @@ interface ThemeColors {
   future: string;
   text: string;
   highlight: string;
-}
-
-function isDarkColor(hex: string): boolean {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return r + g + b < 384;
 }
 
 function getThemeColors(
@@ -59,7 +52,7 @@ function getThemeColors(
   if (isValidHexColor(customBg)) {
     base.bg = customBg;
     if (!isValidHexColor(customDot)) {
-      base.future = isDarkColor(customBg) ? "#606060" : "#D1D5DB";
+      base.future = getAutoDotColor(theme, customBg);
     }
   }
   if (isValidHexColor(customDot)) {
