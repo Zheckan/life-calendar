@@ -1,5 +1,6 @@
 import { ImageResponse } from "next/og";
 import { type NextRequest } from "next/server";
+import { isValid, parseISO } from "date-fns";
 import {
   getDaysDots,
   getYearByMonthDots,
@@ -71,6 +72,15 @@ function getDotColor(state: DotState, colors: ThemeColors): string {
     case "future":
       return colors.future;
   }
+}
+
+function parseDateParam(value: string, fallback: string): Date {
+  const parsed = parseISO(value);
+  if (isValid(parsed)) {
+    return parsed;
+  }
+
+  return parseISO(fallback);
 }
 
 function renderLifeCalendar(
@@ -510,15 +520,15 @@ function renderQuarterCalendar(
 }
 
 function renderGoalCalendar(
-  goalStart: string,
-  goalEnd: string,
+  goalStart: Date,
+  goalEnd: Date,
   goalTitle: string,
   width: number,
-  height: number,
   colors: ThemeColors,
 ): React.ReactElement {
-  const data = getGoalDots(new Date(goalStart), new Date(goalEnd));
+  const data = getGoalDots(goalStart, goalEnd);
   const cols = data.dots[0]?.length ?? 15;
+  const titleText = goalTitle.trim() || "Goal";
 
   const gridWidth = width * 0.79;
   const cellSize = gridWidth / cols;
@@ -531,16 +541,16 @@ function renderGoalCalendar(
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
+        justifyContent: "center",
         width: "100%",
         height: "100%",
         backgroundColor: colors.bg,
         fontFamily: "Inter",
-        paddingTop: `${Math.round(height * 0.235)}px`,
       }}
     >
       <div
         style={{
-          fontSize: `${Math.min(36, Math.max(16, Math.floor((width / goalTitle.length) * 1.2)))}px`,
+          fontSize: `${Math.min(36, Math.max(16, Math.floor((width / titleText.length) * 1.2)))}px`,
           color: colors.text,
           marginBottom: "40px",
           maxWidth: `${width * 0.85}px`,
@@ -548,7 +558,7 @@ function renderGoalCalendar(
           overflow: "hidden",
         }}
       >
-        {goalTitle}
+        {titleText}
       </div>
       <div
         style={{
@@ -589,9 +599,15 @@ function renderGoalCalendar(
           color: colors.text,
         }}
       >
-        <span style={{ color: colors.highlight }}>{data.daysLeft}d left</span>
-        <span style={{ marginLeft: "14px", marginRight: "14px" }}>&middot;</span>
-        <span>{data.percentElapsed}%</span>
+        {data.status === "upcoming" ? (
+          <span style={{ color: colors.highlight }}>{data.daysUntilStart}d to start</span>
+        ) : (
+          <>
+            <span style={{ color: colors.highlight }}>{data.daysLeft}d left</span>
+            <span style={{ marginLeft: "14px", marginRight: "14px" }}>&middot;</span>
+            <span>{data.percentElapsed}%</span>
+          </>
+        )}
       </div>
     </div>
   );
@@ -636,6 +652,8 @@ export async function GET(
   const accent = searchParams.get("accent");
   const bg = searchParams.get("bg");
   const dot = searchParams.get("dot");
+  const goalStartDate = parseDateParam(goalStart, "2026-01-01");
+  const goalEndDate = parseDateParam(goalEnd, "2026-12-31");
 
   const colors = getThemeColors(theme, accent, bg, dot);
 
@@ -652,7 +670,7 @@ export async function GET(
       content = renderQuarterCalendar(weekStart, width, height, colors);
       break;
     case "goal":
-      content = renderGoalCalendar(goalStart, goalEnd, goalTitle, width, height, colors);
+      content = renderGoalCalendar(goalStartDate, goalEndDate, goalTitle, width, colors);
       break;
     case "days":
     default:

@@ -305,7 +305,8 @@ export default function Home(): React.ReactElement {
                     <img
                       ref={previewImageRef}
                       src={imageSrc}
-                      alt="Calendar preview"
+                      alt=""
+                      aria-hidden="true"
                       className="absolute inset-0 block h-full w-full object-cover"
                       fetchPriority="high"
                       loading="eager"
