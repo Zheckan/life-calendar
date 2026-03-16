@@ -67,3 +67,4 @@ Suggested format:
 <!-- Add entries here as you discover them -->
 
 - 2026-03-16 - Native `input[type="date"]` controls rendered inconsistently across mobile Safari and Firefox in the home form; prefer the shared shadcn `Calendar` + `Popover` date picker instead of trying to skin the native control.
+- 2026-03-16 - OG route query dates arrive as `YYYY-MM-DD`; parse them with `date-fns/parseISO` instead of `new Date(...)` or day counts can shift by timezone.

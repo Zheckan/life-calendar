@@ -64,7 +64,9 @@ export interface QuarterResult {
 export interface GoalDotsResult {
   dots: DotData[][];
   daysLeft: number;
+  daysUntilStart: number;
   percentElapsed: number;
+  status: "upcoming" | "active" | "complete";
 }
 
 export function isLeapYear(year: number): boolean {
@@ -276,11 +278,14 @@ export function getQuarterDots(weekStart: WeekStart): QuarterResult {
 export function getGoalDots(startDate: Date, deadline: Date): GoalDotsResult {
   const today = startOfDay(new Date());
   const start = startOfDay(startDate);
-  const end = startOfDay(deadline);
+  const normalizedDeadline = startOfDay(deadline);
+  const end = isBefore(normalizedDeadline, start) ? start : normalizedDeadline;
   const totalDays = Math.max(1, differenceInDays(end, start) + 1);
+  const status = isBefore(today, start) ? "upcoming" : isBefore(end, today) ? "complete" : "active";
   const daysElapsedRaw = differenceInDays(today, start);
   const daysElapsed = Math.max(0, Math.min(totalDays, daysElapsedRaw));
-  const daysLeft = Math.max(0, differenceInDays(end, today));
+  const daysUntilStart = Math.max(0, differenceInDays(start, today));
+  const daysLeft = Math.max(0, totalDays - daysElapsed - (status === "active" ? 1 : 0));
   const percentElapsed = pct1(daysElapsed, totalDays);
 
   const cols = 15;
@@ -304,5 +309,5 @@ export function getGoalDots(startDate: Date, deadline: Date): GoalDotsResult {
     dots.push(row);
   }
 
-  return { dots, daysLeft, percentElapsed };
+  return { dots, daysLeft, daysUntilStart, percentElapsed, status };
 }
