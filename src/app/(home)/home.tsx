@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence, MotionConfig } from "framer-motion";
 import { DesktopColorPicker } from "@/components/color-picker";
+import { DatePickerField } from "@/components/date-picker-field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -329,7 +330,7 @@ export default function Home(): React.ReactElement {
               <section className="glass rounded-2xl p-5">
                 <p className="section-label mb-4">Calendar Type</p>
                 <Select value={view} onValueChange={(v) => setView(v as CalendarView)}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full sm:w-fit">
                     <SelectValue>{selectedViewOption?.label}</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
@@ -359,15 +360,13 @@ export default function Home(): React.ReactElement {
                       exit="hidden"
                       transition={{ duration: 0.2 }}
                     >
-                      <div className="space-y-2 pt-4">
-                        <Label htmlFor="birthday">Birthday</Label>
-                        <Input
-                          id="birthday"
-                          type="date"
-                          value={birthday}
-                          onChange={(e) => setBirthday(e.target.value)}
-                        />
-                      </div>
+                      <DatePickerField
+                        id="birthday"
+                        label="Birthday"
+                        value={birthday}
+                        onChange={setBirthday}
+                        className="pt-4"
+                      />
                     </motion.div>
                   )}
 
@@ -392,22 +391,20 @@ export default function Home(): React.ReactElement {
                             onChange={(e) => setGoalTitle(e.target.value)}
                           />
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="goalStart">Start Date</Label>
-                          <Input
+                        <div className="grid gap-3 lg:contents">
+                          <DatePickerField
                             id="goalStart"
-                            type="date"
+                            label="Start Date"
                             value={goalStart}
-                            onChange={(e) => setGoalStart(e.target.value)}
+                            onChange={setGoalStart}
+                            className="lg:min-w-0"
                           />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="goalEnd">End Date</Label>
-                          <Input
+                          <DatePickerField
                             id="goalEnd"
-                            type="date"
+                            label="End Date"
                             value={goalEnd}
-                            onChange={(e) => setGoalEnd(e.target.value)}
+                            onChange={setGoalEnd}
+                            className="lg:min-w-0"
                           />
                         </div>
                       </div>
@@ -425,7 +422,7 @@ export default function Home(): React.ReactElement {
                     <div className="space-y-2">
                       <Label>Week Start</Label>
                       <Select value={weekStart} onValueChange={(v) => setWeekStart(v as WeekStart)}>
-                        <SelectTrigger>
+                        <SelectTrigger className="w-full sm:w-fit">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -438,7 +435,7 @@ export default function Home(): React.ReactElement {
                   <div className="space-y-2">
                     <Label>Theme</Label>
                     <Select value={theme} onValueChange={(v) => setTheme(v as "dark" | "light")}>
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full sm:w-fit">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -544,7 +541,7 @@ export default function Home(): React.ReactElement {
                     <div className="space-y-2">
                       <Label>Phone Model</Label>
                       <Select value={phoneModel} onValueChange={handlePhoneChange}>
-                        <SelectTrigger>
+                        <SelectTrigger className="w-full lg:w-fit">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
