@@ -374,20 +374,19 @@ export function DesktopColorPicker({ label, value, onChange }: DesktopColorPicke
                       type="button"
                       aria-label={`Use ${swatch} for ${label}`}
                       onClick={() => onChange(swatch)}
-                      className={`appearance-none justify-self-center rounded-full border-0 bg-transparent p-0 transition-transform focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black focus-visible:outline-hidden ${
-                        selected
-                          ? "scale-110 ring-2 ring-white ring-offset-2 ring-offset-black"
-                          : "ring-0 ring-offset-0 hover:scale-105"
+                      className={`inline-flex appearance-none items-center justify-center justify-self-center rounded-full border-0 p-[2px] transition-transform outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ${
+                        selected ? "scale-105 bg-white" : "bg-transparent hover:scale-105"
                       }`}
                       style={{ width: "2rem", height: "2rem" }}
                     >
                       <span
                         aria-hidden="true"
-                        className="block h-7 w-7 rounded-full"
+                        className="block h-full w-full rounded-full"
                         style={{
                           backgroundColor: swatch,
-                          boxShadow:
-                            "inset 0 1px 0 rgba(255,255,255,0.18), 0 0 0 1px rgba(148,163,184,0.22)",
+                          boxShadow: selected
+                            ? "inset 0 1px 0 rgba(255,255,255,0.18)"
+                            : "inset 0 1px 0 rgba(255,255,255,0.18), 0 0 0 1px rgba(148,163,184,0.22)",
                         }}
                       />
                       <span className="sr-only">{swatch}</span>
