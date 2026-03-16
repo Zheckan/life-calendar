@@ -9,6 +9,7 @@ import {
   type WeekStart,
   type DotState,
 } from "@/lib/calendar-utils";
+import { isValidHexColor } from "@/lib/colors";
 
 interface ThemeColors {
   bg: string;
@@ -17,12 +18,6 @@ interface ThemeColors {
   future: string;
   text: string;
   highlight: string;
-}
-
-const HEX_COLOR_RE = /^#[0-9a-fA-F]{6}$/;
-
-function isValidHex(color: string | null): color is string {
-  return color !== null && HEX_COLOR_RE.test(color);
 }
 
 function isDarkColor(hex: string): boolean {
@@ -57,17 +52,17 @@ function getThemeColors(
           highlight: "#F56B3F",
         };
 
-  if (isValidHex(customAccent)) {
+  if (isValidHexColor(customAccent)) {
     base.current = customAccent;
     base.highlight = customAccent;
   }
-  if (isValidHex(customBg)) {
+  if (isValidHexColor(customBg)) {
     base.bg = customBg;
-    if (!isValidHex(customDot)) {
+    if (!isValidHexColor(customDot)) {
       base.future = isDarkColor(customBg) ? "#606060" : "#D1D5DB";
     }
   }
-  if (isValidHex(customDot)) {
+  if (isValidHexColor(customDot)) {
     base.future = customDot;
   }
 

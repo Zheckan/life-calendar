@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Copy, Check, Loader2, RotateCcw } from "lucide-react";
 import { SetupGuide } from "@/components/setup-guide";
 import type { CalendarView, WeekStart } from "@/lib/calendar-utils";
+import { normalizeHexColor } from "@/lib/colors";
 import { SCREEN_RESOLUTIONS } from "@/lib/screen-resolutions";
 
 const VIEW_OPTIONS: { value: CalendarView; label: string; description: string }[] = [
@@ -29,15 +30,13 @@ const VIEW_OPTIONS: { value: CalendarView; label: string; description: string }[
 ];
 
 const WEEK_START_VIEWS: CalendarView[] = ["months", "quarters"];
-const HEX_COLOR_RE = /^#[0-9A-F]{6}$/i;
-
 const FADE_VARIANTS = {
   hidden: { opacity: 0, height: 0 },
   visible: { opacity: 1, height: "auto" as const },
 };
 
 function resolvePickerColor(value: string, fallback: string): string {
-  return HEX_COLOR_RE.test(value) ? value.toUpperCase() : fallback;
+  return normalizeHexColor(value) ?? fallback;
 }
 
 interface ColorControlProps {

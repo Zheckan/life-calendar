@@ -180,7 +180,9 @@
 }
 
 .color-picker-slider:focus-visible {
-  outline: none;
+  outline: 2px solid var(--ring);
+  outline-offset: 4px;
+  border-radius: 9999px;
 }
 
 .color-picker-slider::-webkit-slider-runnable-track {
