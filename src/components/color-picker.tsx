@@ -90,7 +90,7 @@ function rgbToHsl(r: number, g: number, b: number): HslColor {
   }
 
   return {
-    h: Math.round(hue * 60),
+    h: Math.round(hue * 60) % 360,
     s: Math.round(saturation * 100),
     l: Math.round(lightness * 100),
   };
@@ -155,6 +155,7 @@ function ColorChannelSlider({ label, value, min, max, onChange, style }: ColorCh
         max={max}
         value={Math.round(value)}
         onChange={(event) => onChange(Number(event.target.value))}
+        aria-label={label}
         className="border-input bg-muted/70 h-2 w-full cursor-pointer appearance-none rounded-full border"
         style={style}
       />
@@ -262,7 +263,7 @@ export function DesktopColorPicker({ label, value, onChange }: DesktopColorPicke
               label="Hue"
               value={current.h}
               min={0}
-              max={360}
+              max={359}
               onChange={(nextHue) => setChannel({ h: nextHue })}
               style={{
                 background:
