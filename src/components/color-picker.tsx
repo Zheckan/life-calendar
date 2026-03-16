@@ -18,6 +18,7 @@ const COLOR_SWATCHES = [
   "#94A3B8",
   "#111827",
 ] as const;
+const HEX_COLOR_RE = /^#[0-9A-F]{6}$/i;
 
 interface DesktopColorPickerProps {
   label: string;
@@ -51,6 +52,10 @@ function toHexChannel(value: number): string {
 }
 
 function hexToRgb(hex: string): { r: number; g: number; b: number } {
+  if (!HEX_COLOR_RE.test(hex)) {
+    return { r: 0, g: 0, b: 0 };
+  }
+
   const normalized = hex.replace("#", "");
   const value = Number.parseInt(normalized, 16);
 
@@ -175,7 +180,11 @@ export function DesktopColorPicker({ label, value, onChange }: DesktopColorPicke
     }
 
     const handlePointerDown = (event: PointerEvent) => {
-      if (!popoverRef.current?.contains(event.target as Node)) {
+      if (!(event.target instanceof Node)) {
+        return;
+      }
+
+      if (!popoverRef.current?.contains(event.target)) {
         setOpen(false);
       }
     };
