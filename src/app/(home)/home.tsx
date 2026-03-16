@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { motion, AnimatePresence, MotionConfig } from "framer-motion";
 import { DesktopColorPicker } from "@/components/color-picker";
 import { DatePickerField } from "@/components/date-picker-field";
@@ -109,6 +109,7 @@ export default function Home(): React.ReactElement {
   const [copied, setCopied] = useState(false);
   const [loadedImageSrc, setLoadedImageSrc] = useState("");
   const [origin, setOrigin] = useState("");
+  const previewImageRef = useRef<HTMLImageElement>(null);
 
   useEffect(() => {
     setOrigin(window.location.origin);
@@ -162,13 +163,25 @@ export default function Home(): React.ReactElement {
   const hasAbsoluteApiUrl = apiUrl.length > 0;
   const previewDeviceLabel = phoneModel === "Custom" ? "Custom Resolution" : phoneModel;
   const selectedViewOption = VIEW_OPTIONS.find((option) => option.value === view);
-  const imageLoading = loadedImageSrc !== imageSrc;
+  const hasLoadedPreview = loadedImageSrc.length > 0;
+  const imageRefreshing = hasLoadedPreview && loadedImageSrc !== imageSrc;
   const defaultAccentColor = theme === "light" ? "#F97316" : "#F56B3F";
   const defaultBgColor = theme === "light" ? "#F5F5F7" : "#1A1A1A";
   const defaultDotColor = theme === "light" ? "#D1D5DB" : "#404040";
   const accentPickerColor = resolvePickerColor(accentColor, defaultAccentColor);
   const bgPickerColor = resolvePickerColor(bgColor, defaultBgColor);
   const dotPickerColor = resolvePickerColor(dotColor, defaultDotColor);
+
+  useEffect(() => {
+    const previewImage = previewImageRef.current;
+    if (
+      previewImage?.complete &&
+      previewImage.naturalWidth > 0 &&
+      previewImage.getAttribute("src") === imageSrc
+    ) {
+      setLoadedImageSrc(imageSrc);
+    }
+  }, [imageSrc]);
 
   const handlePhoneChange = (value: string) => {
     setPhoneModel(value);
@@ -266,8 +279,19 @@ export default function Home(): React.ReactElement {
                     className="border-border/70 relative w-full max-w-[min(100%,20.5rem)] overflow-hidden rounded-[2rem] border bg-black shadow-[0_30px_90px_-45px_rgba(0,0,0,0.95)] lg:max-w-[19.75rem] xl:max-w-[20rem]"
                     style={{ aspectRatio: `${width} / ${height}` }}
                   >
+                    {!hasLoadedPreview && (
+                      <div className="absolute inset-0 z-10 flex items-center justify-center px-6 text-center">
+                        <div className="max-w-[15rem] space-y-2">
+                          <p className="text-foreground/90 text-sm font-medium">Live preview</p>
+                          <p className="text-muted-foreground text-xs leading-relaxed">
+                            Your wallpaper preview appears here and updates after you change the
+                            settings.
+                          </p>
+                        </div>
+                      </div>
+                    )}
                     <AnimatePresence>
-                      {imageLoading && (
+                      {imageRefreshing && (
                         <motion.div
                           className="bg-muted/50 absolute inset-0 z-10 flex items-center justify-center"
                           initial={{ opacity: 0 }}
@@ -279,6 +303,7 @@ export default function Home(): React.ReactElement {
                       )}
                     </AnimatePresence>
                     <img
+                      ref={previewImageRef}
                       src={imageSrc}
                       alt="Calendar preview"
                       className="absolute inset-0 block h-full w-full object-cover"
