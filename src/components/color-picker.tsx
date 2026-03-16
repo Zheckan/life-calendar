@@ -38,7 +38,7 @@ interface ColorChannelSliderProps {
   min: number;
   max: number;
   onChange: (value: number) => void;
-  style?: CSSProperties;
+  style?: CSSProperties & { "--slider-track"?: string };
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -161,7 +161,7 @@ function ColorChannelSlider({ label, value, min, max, onChange, style }: ColorCh
         value={Math.round(value)}
         onChange={(event) => onChange(Number(event.target.value))}
         aria-label={label}
-        className="border-input bg-muted/70 h-2 w-full cursor-pointer appearance-none rounded-full border"
+        className="color-picker-slider"
         style={style}
       />
     </div>
@@ -286,7 +286,7 @@ export function DesktopColorPicker({ label, value, onChange }: DesktopColorPicke
               max={359}
               onChange={(nextHue) => setChannel({ h: nextHue })}
               style={{
-                background:
+                "--slider-track":
                   "linear-gradient(90deg, #FF0000 0%, #FFFF00 17%, #00FF00 33%, #00FFFF 50%, #0000FF 67%, #FF00FF 83%, #FF0000 100%)",
               }}
             />
@@ -297,7 +297,7 @@ export function DesktopColorPicker({ label, value, onChange }: DesktopColorPicke
               max={100}
               onChange={(nextSaturation) => setChannel({ s: nextSaturation })}
               style={{
-                background: `linear-gradient(90deg, ${hslToHex(current.h, 0, current.l)} 0%, ${hslToHex(current.h, 100, current.l)} 100%)`,
+                "--slider-track": `linear-gradient(90deg, ${hslToHex(current.h, 0, current.l)} 0%, ${hslToHex(current.h, 100, current.l)} 100%)`,
               }}
             />
             <ColorChannelSlider
@@ -307,7 +307,7 @@ export function DesktopColorPicker({ label, value, onChange }: DesktopColorPicke
               max={100}
               onChange={(nextLightness) => setChannel({ l: nextLightness })}
               style={{
-                background: `linear-gradient(90deg, ${hslToHex(current.h, current.s, 0)} 0%, ${hslToHex(current.h, current.s, 50)} 50%, ${hslToHex(current.h, current.s, 100)} 100%)`,
+                "--slider-track": `linear-gradient(90deg, ${hslToHex(current.h, current.s, 0)} 0%, ${hslToHex(current.h, current.s, 50)} 50%, ${hslToHex(current.h, current.s, 100)} 100%)`,
               }}
             />
           </div>
