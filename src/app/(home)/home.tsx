@@ -381,8 +381,8 @@ export default function Home(): React.ReactElement {
                       exit="hidden"
                       transition={{ duration: 0.2 }}
                     >
-                      <div className="space-y-4 pt-4">
-                        <div className="space-y-2">
+                      <div className="grid gap-3 pt-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)_minmax(0,1fr)] lg:items-end">
+                        <div className="space-y-2 lg:min-w-0">
                           <Label htmlFor="goalTitle">Goal Title</Label>
                           <Input
                             id="goalTitle"
@@ -392,25 +392,23 @@ export default function Home(): React.ReactElement {
                             onChange={(e) => setGoalTitle(e.target.value)}
                           />
                         </div>
-                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                          <div className="space-y-2">
-                            <Label htmlFor="goalStart">Start Date</Label>
-                            <Input
-                              id="goalStart"
-                              type="date"
-                              value={goalStart}
-                              onChange={(e) => setGoalStart(e.target.value)}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="goalEnd">End Date</Label>
-                            <Input
-                              id="goalEnd"
-                              type="date"
-                              value={goalEnd}
-                              onChange={(e) => setGoalEnd(e.target.value)}
-                            />
-                          </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="goalStart">Start Date</Label>
+                          <Input
+                            id="goalStart"
+                            type="date"
+                            value={goalStart}
+                            onChange={(e) => setGoalStart(e.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="goalEnd">End Date</Label>
+                          <Input
+                            id="goalEnd"
+                            type="date"
+                            value={goalEnd}
+                            onChange={(e) => setGoalEnd(e.target.value)}
+                          />
                         </div>
                       </div>
                     </motion.div>
@@ -541,21 +539,31 @@ export default function Home(): React.ReactElement {
               {/* Display */}
               <section className="glass rounded-2xl p-5">
                 <p className="section-label mb-4">Display</p>
-                <div className="space-y-2">
-                  <Label>Phone Model</Label>
-                  <Select value={phoneModel} onValueChange={handlePhoneChange}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {SCREEN_RESOLUTIONS.map((r) => (
-                        <SelectItem key={r.name} value={r.name}>
-                          {r.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-muted-foreground pt-2 text-sm">
+                <div className="space-y-3">
+                  <div className="grid gap-3 lg:grid-cols-[minmax(0,16rem)_1fr] lg:items-end lg:gap-6">
+                    <div className="space-y-2">
+                      <Label>Phone Model</Label>
+                      <Select value={phoneModel} onValueChange={handlePhoneChange}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {SCREEN_RESOLUTIONS.map((r) => (
+                            <SelectItem key={r.name} value={r.name}>
+                              {r.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="hidden lg:flex lg:flex-col lg:items-end lg:justify-end">
+                      <p className="text-muted-foreground text-sm">Output resolution</p>
+                      <p className="text-foreground/85 font-mono text-lg leading-none">
+                        {width} x {height}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-muted-foreground text-sm lg:hidden">
                     Output resolution:{" "}
                     <span className="text-foreground/85 font-mono">
                       {width} x {height}
