@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
-import { Copy, Check, Loader2, RotateCcw } from "lucide-react";
+import { Copy, Check, Github, Loader2, RotateCcw } from "lucide-react";
 import { SetupGuide } from "@/components/setup-guide";
 import type { CalendarView, WeekStart } from "@/lib/calendar-utils";
 import { getAutoDotColor, normalizeHexColor } from "@/lib/colors";
@@ -30,6 +30,7 @@ const VIEW_OPTIONS: { value: CalendarView; label: string; description: string }[
 ];
 
 const WEEK_START_VIEWS: CalendarView[] = ["months", "quarters"];
+const GITHUB_URL = "https://github.com/Zheckan/life-calendar";
 const FADE_VARIANTS = {
   hidden: { opacity: 0, height: 0 },
   visible: { opacity: 1, height: "auto" as const },
@@ -672,12 +673,25 @@ export default function Home(): React.ReactElement {
         <footer className="border-border/50 relative mt-12 border-t">
           <div className="via-primary/45 absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent to-transparent" />
           <div
-            className="mx-auto flex max-w-6xl flex-col items-center gap-1 px-6 pt-6 text-center"
+            className="mx-auto flex max-w-6xl flex-col items-center gap-3 px-6 pt-6 text-center"
             style={{ paddingBottom: "calc(1.75rem + var(--safe-area-bottom))" }}
           >
             <p className="text-foreground text-sm font-medium">Life Calendar</p>
             <p className="text-muted-foreground text-sm">
               Dynamic wallpapers that stay in sync with your timeline.
+            </p>
+            <p className="text-muted-foreground max-w-md text-sm">
+              This is an open-source project{" "}
+              <a
+                href={GITHUB_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="border-border/70 bg-background/55 text-foreground hover:bg-accent inline-flex translate-y-[-0.04em] items-center gap-1 rounded-full border px-2 py-0.5 align-middle text-[0.8125rem] font-medium transition-colors"
+              >
+                <Github className="h-3.5 w-3.5" />
+                GitHub
+              </a>
+              , where you can browse the code, report issues, or contribute improvements.
             </p>
           </div>
         </footer>
