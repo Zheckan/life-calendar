@@ -68,3 +68,4 @@ Suggested format:
 
 - 2026-03-16 - Native `input[type="date"]` controls rendered inconsistently across mobile Safari and Firefox in the home form; prefer the shared shadcn `Calendar` + `Popover` date picker instead of trying to skin the native control.
 - 2026-03-16 - OG route query dates arrive as `YYYY-MM-DD`; parse them with `date-fns/parseISO` instead of `new Date(...)` or day counts can shift by timezone.
+- 2026-04-03 - The OG route should derive "today" from `x-vercel-ip-timezone` when running on Vercel and set `Vary: X-Vercel-IP-Timezone`; otherwise daily wallpapers can lag a day after DST or across regions.
