@@ -89,8 +89,16 @@ function pct1(numerator: number, denominator: number): number {
   return Math.min(100, parseFloat(((numerator / denominator) * 100).toFixed(1)));
 }
 
-export function getLifeWeeks(birthday: Date, lifespan: number = 90): LifeWeeksResult {
-  const today = startOfDay(new Date());
+function normalizeToday(referenceDate: Date): Date {
+  return startOfDay(referenceDate);
+}
+
+export function getLifeWeeks(
+  birthday: Date,
+  lifespan: number = 90,
+  todayDate: Date = new Date(),
+): LifeWeeksResult {
+  const today = normalizeToday(todayDate);
   const bday = startOfDay(birthday);
   const totalWeeksLived = Math.max(0, differenceInWeeks(today, bday));
   const currentYearIndex = Math.floor(totalWeeksLived / 52);
@@ -123,8 +131,8 @@ export function getLifeWeeks(birthday: Date, lifespan: number = 90): LifeWeeksRe
   };
 }
 
-export function getDaysDots(): DaysDotsResult {
-  const today = startOfDay(new Date());
+export function getDaysDots(todayDate: Date = new Date()): DaysDotsResult {
+  const today = normalizeToday(todayDate);
   const yearStart = startOfYear(today);
   const yearEnd = endOfYear(today);
   const totalDays = getDaysInYear(today);
@@ -156,8 +164,11 @@ export function getDaysDots(): DaysDotsResult {
   return { dots, daysElapsed, daysLeft, percentElapsed };
 }
 
-export function getYearByMonthDots(weekStart: WeekStart): YearByMonthResult {
-  const today = startOfDay(new Date());
+export function getYearByMonthDots(
+  weekStart: WeekStart,
+  todayDate: Date = new Date(),
+): YearByMonthResult {
+  const today = normalizeToday(todayDate);
   const yearStart = startOfYear(today);
   const yearEnd = endOfYear(today);
   const totalDays = getDaysInYear(today);
@@ -217,8 +228,8 @@ const QUARTER_MONTHS: [number, number, number][] = [
   [9, 10, 11],
 ];
 
-export function getQuarterDots(weekStart: WeekStart): QuarterResult {
-  const today = startOfDay(new Date());
+export function getQuarterDots(weekStart: WeekStart, todayDate: Date = new Date()): QuarterResult {
+  const today = normalizeToday(todayDate);
   const yearStart = startOfYear(today);
   const yearEnd = endOfYear(today);
   const totalDays = getDaysInYear(today);
@@ -275,8 +286,12 @@ export function getQuarterDots(weekStart: WeekStart): QuarterResult {
   return { quarters, daysElapsed, daysLeft, percentElapsed };
 }
 
-export function getGoalDots(startDate: Date, deadline: Date): GoalDotsResult {
-  const today = startOfDay(new Date());
+export function getGoalDots(
+  startDate: Date,
+  deadline: Date,
+  todayDate: Date = new Date(),
+): GoalDotsResult {
+  const today = normalizeToday(todayDate);
   const start = startOfDay(startDate);
   const normalizedDeadline = startOfDay(deadline);
   const end = isBefore(normalizedDeadline, start) ? start : normalizedDeadline;

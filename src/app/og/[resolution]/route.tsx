@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 import { type NextRequest } from "next/server";
-import { isValid, parseISO } from "date-fns";
+import { isValid, parseISO, startOfDay } from "date-fns";
 import {
   getDaysDots,
   getYearByMonthDots,
@@ -83,15 +83,91 @@ function parseDateParam(value: string, fallback: string): Date {
   return parseISO(fallback);
 }
 
+function isValidTimeZone(value: string): boolean {
+  try {
+    Intl.DateTimeFormat("en-US", { timeZone: value }).format(new Date());
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function getCurrentDayKeyInTimeZone(timeZone: string): string | null {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+
+  const year = parts.find((part) => part.type === "year")?.value;
+  const month = parts.find((part) => part.type === "month")?.value;
+  const day = parts.find((part) => part.type === "day")?.value;
+
+  if (!year || !month || !day) {
+    return null;
+  }
+
+  return `${year}-${month}-${day}`;
+}
+
+function resolveCurrentDate(request: NextRequest): {
+  today: Date;
+  todayKey: string;
+  timeZone: string | null;
+} {
+  const requestedTimeZone = request.nextUrl.searchParams.get("tz");
+  const headerTimeZone = request.headers.get("x-vercel-ip-timezone");
+  const timeZone =
+    [requestedTimeZone, headerTimeZone].find(
+      (value): value is string => !!value && isValidTimeZone(value),
+    ) ?? null;
+
+  if (!timeZone) {
+    const today = startOfDay(new Date());
+    const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(
+      today.getDate(),
+    ).padStart(2, "0")}`;
+    return { today, todayKey, timeZone: null };
+  }
+
+  const todayKey = getCurrentDayKeyInTimeZone(timeZone);
+  if (!todayKey) {
+    const today = startOfDay(new Date());
+    const fallbackKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(
+      today.getDate(),
+    ).padStart(2, "0")}`;
+    return { today, todayKey: fallbackKey, timeZone: null };
+  }
+
+  return { today: parseISO(todayKey), todayKey, timeZone };
+}
+
+function appendVaryHeader(headers: Headers, value: string): void {
+  const existing = headers.get("Vary");
+  const varyValues = existing
+    ? existing
+        .split(",")
+        .map((entry) => entry.trim())
+        .filter(Boolean)
+    : [];
+
+  if (!varyValues.includes(value)) {
+    varyValues.push(value);
+  }
+
+  headers.set("Vary", varyValues.join(", "));
+}
+
 function renderLifeCalendar(
   birthday: string,
   width: number,
   height: number,
   colors: ThemeColors,
+  today: Date,
 ): React.ReactElement {
   const lifespan = 90;
-  const bday = new Date(birthday);
-  const today = new Date();
+  const bday = parseDateParam(birthday, "1990-01-15");
   const totalWeeksLived = Math.max(
     0,
     Math.floor((today.getTime() - bday.getTime()) / (7 * 24 * 60 * 60 * 1000)),
@@ -187,8 +263,9 @@ function renderDaysCalendar(
   width: number,
   height: number,
   colors: ThemeColors,
+  today: Date,
 ): React.ReactElement {
-  const data = getDaysDots();
+  const data = getDaysDots(today);
   const cols = data.dots[0]?.length ?? 15;
 
   const gridWidth = width * 0.79;
@@ -263,8 +340,9 @@ function renderYearByMonth(
   width: number,
   height: number,
   colors: ThemeColors,
+  today: Date,
 ): React.ReactElement {
-  const data = getYearByMonthDots(weekStart);
+  const data = getYearByMonthDots(weekStart, today);
   const monthsPerRow = 3;
 
   const cellWidth = width * 0.85;
@@ -400,8 +478,9 @@ function renderQuarterCalendar(
   width: number,
   height: number,
   colors: ThemeColors,
+  today: Date,
 ): React.ReactElement {
-  const data = getQuarterDots(weekStart);
+  const data = getQuarterDots(weekStart, today);
 
   const cellWidth = width * 0.85;
   const quarterWidth = cellWidth / 2;
@@ -525,8 +604,9 @@ function renderGoalCalendar(
   goalTitle: string,
   width: number,
   colors: ThemeColors,
+  today: Date,
 ): React.ReactElement {
-  const data = getGoalDots(goalStart, goalEnd);
+  const data = getGoalDots(goalStart, goalEnd, today);
   const cols = data.dots[0]?.length ?? 15;
   const titleText = goalTitle.trim() || "Goal";
 
@@ -654,6 +734,7 @@ export async function GET(
   const dot = searchParams.get("dot");
   const goalStartDate = parseDateParam(goalStart, "2026-01-01");
   const goalEndDate = parseDateParam(goalEnd, "2026-12-31");
+  const { today, todayKey, timeZone } = resolveCurrentDate(request);
 
   const colors = getThemeColors(theme, accent, bg, dot);
 
@@ -661,26 +742,26 @@ export async function GET(
 
   switch (view) {
     case "life":
-      content = renderLifeCalendar(birthday, width, height, colors);
+      content = renderLifeCalendar(birthday, width, height, colors, today);
       break;
     case "months":
-      content = renderYearByMonth(weekStart, scale, width, height, colors);
+      content = renderYearByMonth(weekStart, scale, width, height, colors, today);
       break;
     case "quarters":
-      content = renderQuarterCalendar(weekStart, width, height, colors);
+      content = renderQuarterCalendar(weekStart, width, height, colors, today);
       break;
     case "goal":
-      content = renderGoalCalendar(goalStartDate, goalEndDate, goalTitle, width, colors);
+      content = renderGoalCalendar(goalStartDate, goalEndDate, goalTitle, width, colors, today);
       break;
     case "days":
     default:
-      content = renderDaysCalendar(width, height, colors);
+      content = renderDaysCalendar(width, height, colors, today);
       break;
   }
 
   const interFontData = await interFont;
 
-  return new ImageResponse(content, {
+  const response = new ImageResponse(content, {
     width,
     height,
     fonts: [
@@ -692,4 +773,13 @@ export async function GET(
       },
     ],
   });
+
+  appendVaryHeader(response.headers, "X-Vercel-IP-Timezone");
+  response.headers.set("X-Life-Calendar-Date", todayKey);
+
+  if (timeZone) {
+    response.headers.set("X-Life-Calendar-Timezone", timeZone);
+  }
+
+  return response;
 }
