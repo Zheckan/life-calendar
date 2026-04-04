@@ -143,6 +143,22 @@ function resolveCurrentDate(request: NextRequest): {
   return { today: parseISO(todayKey), todayKey, timeZone };
 }
 
+function appendVaryHeader(headers: Headers, value: string): void {
+  const existing = headers.get("Vary");
+  const varyValues = existing
+    ? existing
+        .split(",")
+        .map((entry) => entry.trim())
+        .filter(Boolean)
+    : [];
+
+  if (!varyValues.includes(value)) {
+    varyValues.push(value);
+  }
+
+  headers.set("Vary", varyValues.join(", "));
+}
+
 function renderLifeCalendar(
   birthday: string,
   width: number,
@@ -758,7 +774,7 @@ export async function GET(
     ],
   });
 
-  response.headers.set("Vary", "X-Vercel-IP-Timezone");
+  appendVaryHeader(response.headers, "X-Vercel-IP-Timezone");
   response.headers.set("X-Life-Calendar-Date", todayKey);
 
   if (timeZone) {
