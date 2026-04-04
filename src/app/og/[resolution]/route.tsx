@@ -111,14 +111,17 @@ function getCurrentDayKeyInTimeZone(timeZone: string): string | null {
   return `${year}-${month}-${day}`;
 }
 
-function resolveCurrentDate(
-  request: NextRequest,
-): { today: Date; todayKey: string; timeZone: string | null } {
+function resolveCurrentDate(request: NextRequest): {
+  today: Date;
+  todayKey: string;
+  timeZone: string | null;
+} {
   const requestedTimeZone = request.nextUrl.searchParams.get("tz");
   const headerTimeZone = request.headers.get("x-vercel-ip-timezone");
   const timeZone =
-    [requestedTimeZone, headerTimeZone].find((value): value is string => !!value && isValidTimeZone(value)) ??
-    null;
+    [requestedTimeZone, headerTimeZone].find(
+      (value): value is string => !!value && isValidTimeZone(value),
+    ) ?? null;
 
   if (!timeZone) {
     const today = startOfDay(new Date());

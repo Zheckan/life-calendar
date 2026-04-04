@@ -228,10 +228,7 @@ const QUARTER_MONTHS: [number, number, number][] = [
   [9, 10, 11],
 ];
 
-export function getQuarterDots(
-  weekStart: WeekStart,
-  todayDate: Date = new Date(),
-): QuarterResult {
+export function getQuarterDots(weekStart: WeekStart, todayDate: Date = new Date()): QuarterResult {
   const today = normalizeToday(todayDate);
   const yearStart = startOfYear(today);
   const yearEnd = endOfYear(today);
