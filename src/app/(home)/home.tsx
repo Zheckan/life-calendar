@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import { motion, AnimatePresence, MotionConfig } from "framer-motion";
 import { DesktopColorPicker } from "@/components/color-picker";
 import { DatePickerField } from "@/components/date-picker-field";
+import { DeviceResolutionPicker } from "@/components/device-resolution-picker";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -19,7 +20,12 @@ import { Copy, Check, Github, Loader2, RotateCcw } from "lucide-react";
 import { SetupGuide } from "@/components/setup-guide";
 import type { CalendarView, WeekStart } from "@/lib/calendar-utils";
 import { getAutoDotColor, normalizeHexColor } from "@/lib/colors";
-import { SCREEN_RESOLUTIONS } from "@/lib/screen-resolutions";
+import {
+  findScreenResolution,
+  getOrientedResolution,
+  type DeviceOrientation,
+} from "@/lib/screen-resolutions";
+import { cn } from "@/lib/utils";
 
 const VIEW_OPTIONS: { value: CalendarView; label: string; description: string }[] = [
   { value: "days", label: "Days", description: "All days of the year" },
@@ -31,6 +37,7 @@ const VIEW_OPTIONS: { value: CalendarView; label: string; description: string }[
 
 const WEEK_START_VIEWS: CalendarView[] = ["months", "quarters"];
 const GITHUB_URL = "https://github.com/Zheckan/life-calendar";
+const DEFAULT_DEVICE_NAME = "iPhone 15 / 15 Pro / 16";
 const FADE_VARIANTS = {
   hidden: { opacity: 0, height: 0 },
   visible: { opacity: 1, height: "auto" as const },
@@ -97,7 +104,8 @@ export default function Home(): React.ReactElement {
   const [birthday, setBirthday] = useState("1990-01-15");
   const [weekStart, setWeekStart] = useState<WeekStart>("monday");
   const [theme, setTheme] = useState<"dark" | "light">("dark");
-  const [phoneModel, setPhoneModel] = useState("iPhone 15 / 15 Pro / 16");
+  const [deviceModel, setDeviceModel] = useState(DEFAULT_DEVICE_NAME);
+  const [tabletOrientation, setTabletOrientation] = useState<DeviceOrientation>("portrait");
   const [width, setWidth] = useState(1179);
   const [height, setHeight] = useState(2556);
   const [goalTitle, setGoalTitle] = useState("");
@@ -162,7 +170,9 @@ export default function Home(): React.ReactElement {
   const imageSrc = `/og/${width}x${height}?${queryString}`;
   const apiUrl = origin ? `${origin}${imageSrc}` : "";
   const hasAbsoluteApiUrl = apiUrl.length > 0;
-  const previewDeviceLabel = phoneModel === "Custom" ? "Custom Resolution" : phoneModel;
+  const selectedDevice = useMemo(() => findScreenResolution(deviceModel), [deviceModel]);
+  const isTabletPreview = selectedDevice?.deviceType === "tablet";
+  const previewDeviceLabel = deviceModel === "Custom" ? "Custom Resolution" : deviceModel;
   const selectedViewOption = VIEW_OPTIONS.find((option) => option.value === view);
   const hasLoadedPreview = loadedImageSrc.length > 0;
   const imageRefreshing = hasLoadedPreview && loadedImageSrc !== imageSrc;
@@ -184,15 +194,30 @@ export default function Home(): React.ReactElement {
     }
   }, [imageSrc]);
 
-  const handlePhoneChange = (value: string) => {
-    setPhoneModel(value);
-    if (value !== "Custom") {
-      const preset = SCREEN_RESOLUTIONS.find((r) => r.name === value);
-      if (preset) {
-        setWidth(preset.width);
-        setHeight(preset.height);
-      }
+  const handleDeviceChange = (value: string) => {
+    setDeviceModel(value);
+    const preset = findScreenResolution(value);
+    if (!preset || preset.deviceType === "custom") {
+      return;
     }
+
+    const nextOrientation = preset.deviceType === "tablet" ? "portrait" : tabletOrientation;
+    const nextResolution = getOrientedResolution(preset, nextOrientation);
+    setTabletOrientation(nextOrientation);
+    setWidth(nextResolution.width);
+    setHeight(nextResolution.height);
+  };
+
+  const handleTabletOrientationChange = (orientation: DeviceOrientation) => {
+    setTabletOrientation(orientation);
+
+    if (!selectedDevice || selectedDevice.deviceType !== "tablet") {
+      return;
+    }
+
+    const nextResolution = getOrientedResolution(selectedDevice, orientation);
+    setWidth(nextResolution.width);
+    setHeight(nextResolution.height);
   };
 
   const handleCopy = async () => {
@@ -234,7 +259,14 @@ export default function Home(): React.ReactElement {
 
         {/* Main content */}
         <main className="relative mx-auto max-w-6xl px-4 pb-16 sm:px-6">
-          <div className="grid gap-8 lg:grid-cols-[minmax(19.5rem,22.5rem)_minmax(0,1fr)] lg:items-stretch lg:gap-10 xl:grid-cols-[minmax(20rem,23rem)_minmax(0,1fr)]">
+          <div
+            className={cn(
+              "grid gap-8 lg:items-stretch lg:gap-10",
+              isTabletPreview
+                ? "lg:grid-cols-[minmax(28rem,34rem)_minmax(0,1fr)] xl:grid-cols-[minmax(30rem,36rem)_minmax(0,1fr)]"
+                : "lg:grid-cols-[minmax(19.5rem,22.5rem)_minmax(0,1fr)] xl:grid-cols-[minmax(20rem,23rem)_minmax(0,1fr)]",
+            )}
+          >
             {/* Preview */}
             <motion.div
               className="order-2 flex justify-center lg:sticky lg:top-8 lg:order-1 lg:self-start"
@@ -242,7 +274,14 @@ export default function Home(): React.ReactElement {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.6, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
             >
-              <section className="glass relative w-full max-w-none overflow-hidden rounded-[2rem] p-4 sm:p-5 lg:max-w-[22.5rem] lg:rounded-[2.25rem] lg:p-5 xl:max-w-[23rem]">
+              <section
+                className={cn(
+                  "glass relative w-full max-w-none overflow-hidden rounded-[2rem] p-4 sm:p-5 lg:p-5",
+                  isTabletPreview
+                    ? "lg:max-w-[34rem] lg:rounded-[1.75rem] xl:max-w-[36rem]"
+                    : "lg:max-w-[22.5rem] lg:rounded-[2.25rem] xl:max-w-[23rem]",
+                )}
+              >
                 <div className="from-primary/12 via-primary/[0.05] pointer-events-none absolute inset-x-8 top-0 h-28 bg-gradient-to-b to-transparent blur-3xl" />
                 <div className="relative mb-4 flex items-center justify-between gap-3">
                   <div className="min-w-0">
@@ -277,7 +316,12 @@ export default function Home(): React.ReactElement {
 
                 <div className="relative flex justify-center">
                   <div
-                    className="border-border/70 relative w-full max-w-[min(100%,20.5rem)] overflow-hidden rounded-[2rem] border bg-black shadow-[0_30px_90px_-45px_rgba(0,0,0,0.95)] lg:max-w-[19.75rem] xl:max-w-[20rem]"
+                    className={cn(
+                      "border-border/70 relative w-full overflow-hidden border bg-black shadow-[0_30px_90px_-45px_rgba(0,0,0,0.95)]",
+                      isTabletPreview
+                        ? "max-w-[min(100%,30rem)] rounded-[1.5rem] lg:max-w-[27rem] xl:max-w-[29rem]"
+                        : "max-w-[min(100%,20.5rem)] rounded-[2rem] lg:max-w-[19.75rem] xl:max-w-[20rem]",
+                    )}
                     style={{ aspectRatio: `${width} / ${height}` }}
                   >
                     {!hasLoadedPreview && (
@@ -565,19 +609,11 @@ export default function Home(): React.ReactElement {
                 <div className="space-y-3">
                   <div className="grid gap-3 lg:grid-cols-[minmax(0,16rem)_1fr] lg:items-end lg:gap-6">
                     <div className="space-y-2">
-                      <Label>Phone Model</Label>
-                      <Select value={phoneModel} onValueChange={handlePhoneChange}>
-                        <SelectTrigger className="w-full lg:w-fit">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {SCREEN_RESOLUTIONS.map((r) => (
-                            <SelectItem key={r.name} value={r.name}>
-                              {r.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Label>Device</Label>
+                      <DeviceResolutionPicker
+                        value={deviceModel}
+                        onValueChange={handleDeviceChange}
+                      />
                     </div>
                     <div className="hidden lg:flex lg:flex-col lg:items-end lg:justify-end">
                       <p className="text-muted-foreground text-sm">Output resolution</p>
@@ -586,6 +622,36 @@ export default function Home(): React.ReactElement {
                       </p>
                     </div>
                   </div>
+                  <AnimatePresence>
+                    {isTabletPreview && (
+                      <motion.div
+                        className="overflow-hidden"
+                        variants={FADE_VARIANTS}
+                        initial="hidden"
+                        animate="visible"
+                        exit="hidden"
+                        transition={{ duration: 0.2 }}
+                      >
+                        <div className="space-y-2 pt-1">
+                          <Label>Orientation</Label>
+                          <div className="border-input bg-input/30 inline-flex w-full rounded-md border p-1 shadow-xs sm:w-fit">
+                            {(["portrait", "landscape"] as const).map((orientation) => (
+                              <Button
+                                key={orientation}
+                                type="button"
+                                variant={tabletOrientation === orientation ? "secondary" : "ghost"}
+                                size="sm"
+                                onClick={() => handleTabletOrientationChange(orientation)}
+                                className="flex-1 capitalize sm:flex-none"
+                              >
+                                {orientation}
+                              </Button>
+                            ))}
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                   <p className="text-muted-foreground text-sm lg:hidden">
                     Output resolution:{" "}
                     <span className="text-foreground/85 font-mono">
@@ -595,7 +661,7 @@ export default function Home(): React.ReactElement {
                 </div>
 
                 <AnimatePresence>
-                  {phoneModel === "Custom" && (
+                  {deviceModel === "Custom" && (
                     <motion.div
                       className="overflow-hidden"
                       variants={FADE_VARIANTS}
