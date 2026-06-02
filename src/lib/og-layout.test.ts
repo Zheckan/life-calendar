@@ -1,6 +1,13 @@
 import { describe, expect, test } from "bun:test";
 
-import { capDotSizeByVerticalSpace, getFittedDotGridLayout } from "./og-layout";
+import {
+  capDotSizeByVerticalSpace,
+  getFittedDotGridLayout,
+  getImageOffsetPixels,
+  getPreviewImageTransform,
+  normalizeImageScale,
+  normalizeImageOffset,
+} from "./og-layout";
 
 describe("OG dot grid layout", () => {
   test("fits days calendar dots inside an iPad Air portrait image", () => {
@@ -58,5 +65,31 @@ describe("OG dot grid layout", () => {
 
     expect(topPadding + contentHeight + footerHeight + bottomReserve).toBeLessThanOrEqual(1640);
     expect(dotSize).toBeLessThan(25);
+  });
+
+  test("normalizes image offsets into a bounded percent range", () => {
+    expect(normalizeImageOffset("12.4")).toBe(12.4);
+    expect(normalizeImageOffset("-50")).toBe(-30);
+    expect(normalizeImageOffset("nonsense")).toBe(0);
+  });
+
+  test("converts image offset percentages to output pixels", () => {
+    expect(getImageOffsetPixels({ width: 1640, height: 2360, x: 10, y: -5 })).toEqual({
+      x: 164,
+      y: -118,
+    });
+  });
+
+  test("normalizes image scale into a bounded percent range", () => {
+    expect(normalizeImageScale("115")).toBe(115);
+    expect(normalizeImageScale("10")).toBe(80);
+    expect(normalizeImageScale("200")).toBe(140);
+    expect(normalizeImageScale("nonsense")).toBe(100);
+  });
+
+  test("builds a CSS transform for client-side preview adjustment", () => {
+    expect(getPreviewImageTransform({ x: 8, y: -4, scale: 120 })).toBe(
+      "translate(8%, -4%) scale(1.2)",
+    );
   });
 });

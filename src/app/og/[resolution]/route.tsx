@@ -11,7 +11,13 @@ import {
   type DotState,
 } from "@/lib/calendar-utils";
 import { getAutoDotColor, isValidHexColor } from "@/lib/colors";
-import { capDotSizeByVerticalSpace, getFittedDotGridLayout } from "@/lib/og-layout";
+import {
+  capDotSizeByVerticalSpace,
+  getFittedDotGridLayout,
+  getImageOffsetPixels,
+  normalizeImageOffset,
+  normalizeImageScale,
+} from "@/lib/og-layout";
 
 interface ThemeColors {
   bg: string;
@@ -158,6 +164,51 @@ function appendVaryHeader(headers: Headers, value: string): void {
   }
 
   headers.set("Vary", varyValues.join(", "));
+}
+
+function renderOffsetCanvas(
+  content: React.ReactElement,
+  width: number,
+  height: number,
+  colors: ThemeColors,
+  offsetX: number,
+  offsetY: number,
+  imageScale: number,
+): React.ReactElement {
+  const offset = getImageOffsetPixels({ width, height, x: offsetX, y: offsetY });
+  const scale = normalizeImageScale(imageScale) / 100;
+
+  if (offset.x === 0 && offset.y === 0 && scale === 1) {
+    return content;
+  }
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        position: "relative",
+        width: "100%",
+        height: "100%",
+        overflow: "hidden",
+        backgroundColor: colors.bg,
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          position: "absolute",
+          left: `${offset.x}px`,
+          top: `${offset.y}px`,
+          width: "100%",
+          height: "100%",
+          transform: `scale(${scale})`,
+          transformOrigin: "center",
+        }}
+      >
+        {content}
+      </div>
+    </div>
+  );
 }
 
 function renderLifeCalendar(
@@ -642,6 +693,7 @@ function renderGoalCalendar(
   const rows = data.dots.length;
   const titleText = goalTitle.trim() || "Goal";
   const titleFontSize = Math.min(36, Math.max(16, Math.floor((width / titleText.length) * 1.2)));
+  const topPadding = Math.round(height * 0.14);
   const titleMarginBottom = 40;
   const statFontSize = 36;
   const statMarginTop = 40;
@@ -653,7 +705,7 @@ function renderGoalCalendar(
     rows,
     maxGridWidthRatio: 0.79,
     reservedHeight:
-      titleFontSize + titleMarginBottom + statMarginTop + statFontSize + bottomReserve,
+      topPadding + titleFontSize + titleMarginBottom + statMarginTop + statFontSize + bottomReserve,
     dotRatio: 0.6,
     minDotSize: 4,
   });
@@ -672,6 +724,7 @@ function renderGoalCalendar(
         height: "100%",
         backgroundColor: colors.bg,
         fontFamily: "Inter",
+        paddingTop: `${topPadding}px`,
       }}
     >
       <div
@@ -778,6 +831,9 @@ export async function GET(
   const accent = searchParams.get("accent");
   const bg = searchParams.get("bg");
   const dot = searchParams.get("dot");
+  const offsetX = normalizeImageOffset(searchParams.get("offsetX"));
+  const offsetY = normalizeImageOffset(searchParams.get("offsetY"));
+  const imageScale = normalizeImageScale(searchParams.get("imageScale"));
   const goalStartDate = parseDateParam(goalStart, "2026-01-01");
   const goalEndDate = parseDateParam(goalEnd, "2026-12-31");
   const { today, todayKey, timeZone } = resolveCurrentDate(request);
@@ -812,6 +868,8 @@ export async function GET(
       content = renderDaysCalendar(width, height, colors, today);
       break;
   }
+
+  content = renderOffsetCanvas(content, width, height, colors, offsetX, offsetY, imageScale);
 
   const interFontData = await interFont;
 

@@ -13,6 +13,7 @@ import { createPortal } from "react-dom";
 
 import { Button } from "@/components/ui/button";
 import { normalizeHexColor } from "@/lib/colors";
+import { getSyncedEditableHsl, type HslColor } from "@/lib/hsl-color";
 
 const COLOR_SWATCHES = [
   "#F97316",
@@ -33,12 +34,6 @@ interface DesktopColorPickerProps {
   label: string;
   value: string;
   onChange: (value: string) => void;
-}
-
-interface HslColor {
-  h: number;
-  s: number;
-  l: number;
 }
 
 interface ColorChannelSliderProps {
@@ -190,9 +185,10 @@ export function DesktopColorPicker({ label, value, onChange }: DesktopColorPicke
   const triggerRef = useRef<HTMLDivElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
   const frameRef = useRef<number | null>(null);
+  const internalHexUpdateRef = useRef<string | null>(null);
   const titleId = useId();
   const normalizedValue = useMemo(() => normalizeHexColor(value) ?? "#000000", [value]);
-  const current = useMemo(() => hexToHsl(normalizedValue), [normalizedValue]);
+  const [draftHsl, setDraftHsl] = useState<HslColor>(() => hexToHsl(normalizedValue));
 
   useEffect(() => {
     setMounted(true);
@@ -203,6 +199,24 @@ export function DesktopColorPicker({ label, value, onChange }: DesktopColorPicke
       setPosition(null);
     }
   }, [open]);
+
+  useEffect(() => {
+    const incomingHsl = hexToHsl(normalizedValue);
+    const isMatchingInternalUpdate = internalHexUpdateRef.current === normalizedValue;
+
+    if (isMatchingInternalUpdate) {
+      internalHexUpdateRef.current = null;
+    }
+
+    setDraftHsl((previousHsl) =>
+      getSyncedEditableHsl({
+        previous: previousHsl,
+        incoming: incomingHsl,
+        isInternalUpdate: open && isMatchingInternalUpdate,
+        isOpen: open,
+      }),
+    );
+  }, [normalizedValue, open]);
 
   useLayoutEffect(() => {
     if (!open || !mounted) {
@@ -313,8 +327,11 @@ export function DesktopColorPicker({ label, value, onChange }: DesktopColorPicke
   }, [open]);
 
   const setChannel = (partial: Partial<HslColor>) => {
-    const next = { ...current, ...partial };
-    onChange(hslToHex(next.h, next.s, next.l));
+    const next = { ...draftHsl, ...partial };
+    const nextHex = hslToHex(next.h, next.s, next.l);
+    setDraftHsl(next);
+    internalHexUpdateRef.current = nextHex;
+    onChange(nextHex);
   };
 
   return (
@@ -398,7 +415,7 @@ export function DesktopColorPicker({ label, value, onChange }: DesktopColorPicke
               <div className="mt-4 space-y-3">
                 <ColorChannelSlider
                   label="Hue"
-                  value={current.h}
+                  value={draftHsl.h}
                   min={0}
                   max={359}
                   onChange={(nextHue) => setChannel({ h: nextHue })}
@@ -409,22 +426,22 @@ export function DesktopColorPicker({ label, value, onChange }: DesktopColorPicke
                 />
                 <ColorChannelSlider
                   label="Saturation"
-                  value={current.s}
+                  value={draftHsl.s}
                   min={0}
                   max={100}
                   onChange={(nextSaturation) => setChannel({ s: nextSaturation })}
                   style={{
-                    "--slider-track": `linear-gradient(90deg, ${hslToHex(current.h, 0, current.l)} 0%, ${hslToHex(current.h, 100, current.l)} 100%)`,
+                    "--slider-track": `linear-gradient(90deg, ${hslToHex(draftHsl.h, 0, draftHsl.l)} 0%, ${hslToHex(draftHsl.h, 100, draftHsl.l)} 100%)`,
                   }}
                 />
                 <ColorChannelSlider
                   label="Lightness"
-                  value={current.l}
+                  value={draftHsl.l}
                   min={0}
                   max={100}
                   onChange={(nextLightness) => setChannel({ l: nextLightness })}
                   style={{
-                    "--slider-track": `linear-gradient(90deg, ${hslToHex(current.h, current.s, 0)} 0%, ${hslToHex(current.h, current.s, 50)} 50%, ${hslToHex(current.h, current.s, 100)} 100%)`,
+                    "--slider-track": `linear-gradient(90deg, ${hslToHex(draftHsl.h, draftHsl.s, 0)} 0%, ${hslToHex(draftHsl.h, draftHsl.s, 50)} 50%, ${hslToHex(draftHsl.h, draftHsl.s, 100)} 100%)`,
                   }}
                 />
               </div>

@@ -27,6 +27,24 @@ interface DotSizeVerticalCapInput {
   minDotSize: number;
 }
 
+interface ImageOffsetPixelsInput {
+  width: number;
+  height: number;
+  x: number;
+  y: number;
+}
+
+interface PreviewImageTransformInput {
+  x: number;
+  y: number;
+  scale: number;
+}
+
+const MAX_IMAGE_OFFSET_PERCENT = 30;
+const MIN_IMAGE_SCALE_PERCENT = 80;
+const MAX_IMAGE_SCALE_PERCENT = 140;
+const DEFAULT_IMAGE_SCALE_PERCENT = 100;
+
 export function getFittedDotGridLayout({
   width,
   height,
@@ -69,4 +87,40 @@ export function capDotSizeByVerticalSpace({
   const maxDotSize = availableHeight / (rowWeight + rowGapWeight);
 
   return Math.max(minDotSize, Math.min(dotSize, maxDotSize));
+}
+
+export function normalizeImageOffset(value: string | number | null | undefined): number {
+  const parsed = typeof value === "number" ? value : Number.parseFloat(value ?? "0");
+
+  if (!Number.isFinite(parsed)) {
+    return 0;
+  }
+
+  return Math.min(MAX_IMAGE_OFFSET_PERCENT, Math.max(-MAX_IMAGE_OFFSET_PERCENT, parsed));
+}
+
+export function getImageOffsetPixels({ width, height, x, y }: ImageOffsetPixelsInput): {
+  x: number;
+  y: number;
+} {
+  return {
+    x: Math.round((width * normalizeImageOffset(x)) / 100),
+    y: Math.round((height * normalizeImageOffset(y)) / 100),
+  };
+}
+
+export function normalizeImageScale(value: string | number | null | undefined): number {
+  const parsed = typeof value === "number" ? value : Number.parseFloat(value ?? "");
+
+  if (!Number.isFinite(parsed)) {
+    return DEFAULT_IMAGE_SCALE_PERCENT;
+  }
+
+  return Math.min(MAX_IMAGE_SCALE_PERCENT, Math.max(MIN_IMAGE_SCALE_PERCENT, parsed));
+}
+
+export function getPreviewImageTransform({ x, y, scale }: PreviewImageTransformInput): string {
+  return `translate(${normalizeImageOffset(x)}%, ${normalizeImageOffset(y)}%) scale(${
+    normalizeImageScale(scale) / 100
+  })`;
 }

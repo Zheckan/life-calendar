@@ -25,6 +25,7 @@ import {
   getOrientedResolution,
   type DeviceOrientation,
 } from "@/lib/screen-resolutions";
+import { getPreviewImageTransform } from "@/lib/og-layout";
 import { cn } from "@/lib/utils";
 
 const VIEW_OPTIONS: { value: CalendarView; label: string; description: string }[] = [
@@ -38,6 +39,8 @@ const VIEW_OPTIONS: { value: CalendarView; label: string; description: string }[
 const WEEK_START_VIEWS: CalendarView[] = ["months", "quarters"];
 const GITHUB_URL = "https://github.com/Zheckan/life-calendar";
 const DEFAULT_DEVICE_NAME = "iPhone 15 / 15 Pro / 16";
+const POSITION_OFFSET_RANGE = { min: -20, max: 20, step: 1 };
+const IMAGE_SCALE_RANGE = { min: 80, max: 140, step: 5 };
 const FADE_VARIANTS = {
   hidden: { opacity: 0, height: 0 },
   visible: { opacity: 1, height: "auto" as const },
@@ -45,6 +48,10 @@ const FADE_VARIANTS = {
 
 function resolvePickerColor(value: string, fallback: string): string {
   return normalizeHexColor(value) ?? fallback;
+}
+
+function clampNumber(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
 }
 
 interface ColorControlProps {
@@ -111,13 +118,24 @@ export default function Home(): React.ReactElement {
   const [goalTitle, setGoalTitle] = useState("");
   const [goalStart, setGoalStart] = useState("2026-01-01");
   const [goalEnd, setGoalEnd] = useState("2026-12-31");
-  const [scale, setScale] = useState(1);
   const [accentColor, setAccentColor] = useState("");
   const [bgColor, setBgColor] = useState("");
   const [dotColor, setDotColor] = useState("");
+  const [imageOffsetX, setImageOffsetX] = useState(0);
+  const [imageOffsetY, setImageOffsetY] = useState(0);
+  const [imageScale, setImageScale] = useState(100);
   const [copied, setCopied] = useState(false);
   const [loadedImageSrc, setLoadedImageSrc] = useState("");
   const [origin, setOrigin] = useState("");
+  const dragStartRef = useRef<{
+    pointerId: number;
+    startX: number;
+    startY: number;
+    offsetX: number;
+    offsetY: number;
+    frameWidth: number;
+    frameHeight: number;
+  } | null>(null);
   const previewImageRef = useRef<HTMLImageElement>(null);
 
   useEffect(() => {
@@ -126,7 +144,7 @@ export default function Home(): React.ReactElement {
 
   const showWeekStart = WEEK_START_VIEWS.includes(view);
 
-  const queryString = useMemo(() => {
+  const baseQueryString = useMemo(() => {
     const params = new URLSearchParams();
     params.set("view", view);
     params.set("theme", theme);
@@ -142,9 +160,6 @@ export default function Home(): React.ReactElement {
       params.set("goalEnd", goalEnd);
       if (goalTitle) params.set("goalTitle", goalTitle);
     }
-    if (view === "months" && scale !== 1) {
-      params.set("scale", String(scale));
-    }
     if (accentColor) params.set("accent", accentColor);
     if (bgColor) params.set("bg", bgColor);
     if (dotColor) params.set("dot", dotColor);
@@ -155,44 +170,56 @@ export default function Home(): React.ReactElement {
     birthday,
     weekStart,
     theme,
-    width,
-    height,
     goalStart,
     goalEnd,
     goalTitle,
     showWeekStart,
-    scale,
     accentColor,
     bgColor,
     dotColor,
   ]);
 
-  const imageSrc = `/og/${width}x${height}?${queryString}`;
-  const apiUrl = origin ? `${origin}${imageSrc}` : "";
+  const queryString = useMemo(() => {
+    const params = new URLSearchParams(baseQueryString);
+    if (imageOffsetX !== 0) params.set("offsetX", String(imageOffsetX));
+    if (imageOffsetY !== 0) params.set("offsetY", String(imageOffsetY));
+    if (imageScale !== 100) params.set("imageScale", String(imageScale));
+
+    return params.toString();
+  }, [baseQueryString, imageOffsetX, imageOffsetY, imageScale]);
+
+  const previewImageSrc = `/og/${width}x${height}?${baseQueryString}`;
+  const wallpaperImageSrc = `/og/${width}x${height}?${queryString}`;
+  const apiUrl = origin ? `${origin}${wallpaperImageSrc}` : "";
   const hasAbsoluteApiUrl = apiUrl.length > 0;
   const selectedDevice = useMemo(() => findScreenResolution(deviceModel), [deviceModel]);
   const isTabletPreview = selectedDevice?.deviceType === "tablet";
   const previewDeviceLabel = deviceModel === "Custom" ? "Custom Resolution" : deviceModel;
   const selectedViewOption = VIEW_OPTIONS.find((option) => option.value === view);
   const hasLoadedPreview = loadedImageSrc.length > 0;
-  const imageRefreshing = hasLoadedPreview && loadedImageSrc !== imageSrc;
+  const imageRefreshing = hasLoadedPreview && loadedImageSrc !== previewImageSrc;
   const defaultAccentColor = theme === "light" ? "#F97316" : "#F56B3F";
   const defaultBgColor = theme === "light" ? "#F5F5F7" : "#1A1A1A";
   const autoDotColor = getAutoDotColor(theme, bgColor);
   const accentPickerColor = resolvePickerColor(accentColor, defaultAccentColor);
   const bgPickerColor = resolvePickerColor(bgColor, defaultBgColor);
   const dotPickerColor = resolvePickerColor(dotColor, autoDotColor);
+  const previewImageTransform = getPreviewImageTransform({
+    x: imageOffsetX,
+    y: imageOffsetY,
+    scale: imageScale,
+  });
 
   useEffect(() => {
     const previewImage = previewImageRef.current;
     if (
       previewImage?.complete &&
       previewImage.naturalWidth > 0 &&
-      previewImage.getAttribute("src") === imageSrc
+      previewImage.getAttribute("src") === previewImageSrc
     ) {
-      setLoadedImageSrc(imageSrc);
+      setLoadedImageSrc(previewImageSrc);
     }
-  }, [imageSrc]);
+  }, [previewImageSrc]);
 
   const handleDeviceChange = (value: string) => {
     setDeviceModel(value);
@@ -231,6 +258,56 @@ export default function Home(): React.ReactElement {
   };
 
   const hasCustomColors = !!(accentColor || bgColor || dotColor);
+  const hasImageAdjustments = imageOffsetX !== 0 || imageOffsetY !== 0 || imageScale !== 100;
+  const handlePreviewPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    const frame = event.currentTarget;
+    const rect = frame.getBoundingClientRect();
+    dragStartRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      offsetX: imageOffsetX,
+      offsetY: imageOffsetY,
+      frameWidth: rect.width,
+      frameHeight: rect.height,
+    };
+    try {
+      frame.setPointerCapture(event.pointerId);
+    } catch {
+      // Synthetic pointer events used by tests may not have an active pointer capture target.
+    }
+  };
+
+  const handlePreviewPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    const dragStart = dragStartRef.current;
+    if (!dragStart || dragStart.pointerId !== event.pointerId) {
+      return;
+    }
+
+    const nextX = clampNumber(
+      Math.round(
+        dragStart.offsetX + ((event.clientX - dragStart.startX) / dragStart.frameWidth) * 100,
+      ),
+      POSITION_OFFSET_RANGE.min,
+      POSITION_OFFSET_RANGE.max,
+    );
+    const nextY = clampNumber(
+      Math.round(
+        dragStart.offsetY + ((event.clientY - dragStart.startY) / dragStart.frameHeight) * 100,
+      ),
+      POSITION_OFFSET_RANGE.min,
+      POSITION_OFFSET_RANGE.max,
+    );
+
+    setImageOffsetX((current) => (current === nextX ? current : nextX));
+    setImageOffsetY((current) => (current === nextY ? current : nextY));
+  };
+
+  const handlePreviewPointerEnd = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (dragStartRef.current?.pointerId === event.pointerId) {
+      dragStartRef.current = null;
+    }
+  };
 
   return (
     <MotionConfig reducedMotion="user">
@@ -317,12 +394,19 @@ export default function Home(): React.ReactElement {
                 <div className="relative flex justify-center">
                   <div
                     className={cn(
-                      "border-border/70 relative w-full overflow-hidden border bg-black shadow-[0_30px_90px_-45px_rgba(0,0,0,0.95)]",
+                      "border-border/70 relative w-full cursor-grab touch-none overflow-hidden border bg-black shadow-[0_30px_90px_-45px_rgba(0,0,0,0.95)] select-none active:cursor-grabbing",
                       isTabletPreview
                         ? "max-w-[min(100%,30rem)] rounded-[1.5rem] lg:max-w-[27rem] xl:max-w-[29rem]"
                         : "max-w-[min(100%,20.5rem)] rounded-[2rem] lg:max-w-[19.75rem] xl:max-w-[20rem]",
                     )}
-                    style={{ aspectRatio: `${width} / ${height}` }}
+                    style={{
+                      aspectRatio: `${width} / ${height}`,
+                      backgroundColor: bgPickerColor,
+                    }}
+                    onPointerDown={handlePreviewPointerDown}
+                    onPointerMove={handlePreviewPointerMove}
+                    onPointerUp={handlePreviewPointerEnd}
+                    onPointerCancel={handlePreviewPointerEnd}
                   >
                     {!hasLoadedPreview && (
                       <div className="absolute inset-0 z-10 flex items-center justify-center px-6 text-center">
@@ -349,14 +433,19 @@ export default function Home(): React.ReactElement {
                     </AnimatePresence>
                     <img
                       ref={previewImageRef}
-                      src={imageSrc}
+                      src={previewImageSrc}
                       alt=""
                       aria-hidden="true"
+                      draggable={false}
                       className="absolute inset-0 block h-full w-full object-cover"
+                      style={{
+                        transform: previewImageTransform,
+                        transformOrigin: "center",
+                      }}
                       fetchPriority="high"
                       loading="eager"
-                      onLoad={() => setLoadedImageSrc(imageSrc)}
-                      onError={() => setLoadedImageSrc(imageSrc)}
+                      onLoad={() => setLoadedImageSrc(previewImageSrc)}
+                      onError={() => setLoadedImageSrc(previewImageSrc)}
                     />
                   </div>
                 </div>
@@ -571,36 +660,6 @@ export default function Home(): React.ReactElement {
                     />
                   </div>
                 </div>
-
-                {/* Dot Scale */}
-                <AnimatePresence>
-                  {view === "months" && (
-                    <motion.div
-                      className="overflow-hidden"
-                      variants={FADE_VARIANTS}
-                      initial="hidden"
-                      animate="visible"
-                      exit="hidden"
-                      transition={{ duration: 0.2 }}
-                    >
-                      <div className="space-y-2 pt-5 pb-2">
-                        <div className="flex items-center justify-between">
-                          <Label>Dot Scale</Label>
-                          <span className="text-muted-foreground text-sm tabular-nums">
-                            {scale.toFixed(1)}x
-                          </span>
-                        </div>
-                        <Slider
-                          min={0.8}
-                          max={2}
-                          step={0.1}
-                          value={[scale]}
-                          onValueChange={([v]) => setScale(v)}
-                        />
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
               </section>
 
               {/* Display */}
@@ -652,6 +711,80 @@ export default function Home(): React.ReactElement {
                       </motion.div>
                     )}
                   </AnimatePresence>
+                  <div className="space-y-3 pt-1">
+                    <div className="flex items-center justify-between gap-3">
+                      <Label>Image Position</Label>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        disabled={!hasImageAdjustments}
+                        tabIndex={hasImageAdjustments ? 0 : -1}
+                        aria-hidden={!hasImageAdjustments}
+                        className={cn(
+                          "h-7 gap-1 text-xs transition-opacity",
+                          hasImageAdjustments ? "opacity-100" : "pointer-events-none opacity-0",
+                        )}
+                        onClick={() => {
+                          setImageOffsetX(0);
+                          setImageOffsetY(0);
+                          setImageScale(100);
+                        }}
+                      >
+                        <RotateCcw className="h-3 w-3" />
+                        Reset
+                      </Button>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground text-sm">Size</span>
+                          <span className="text-muted-foreground font-mono text-xs tabular-nums">
+                            {imageScale}%
+                          </span>
+                        </div>
+                        <Slider
+                          min={IMAGE_SCALE_RANGE.min}
+                          max={IMAGE_SCALE_RANGE.max}
+                          step={IMAGE_SCALE_RANGE.step}
+                          value={[imageScale]}
+                          onValueChange={([value]) => setImageScale(value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground text-sm">Horizontal</span>
+                          <span className="text-muted-foreground font-mono text-xs tabular-nums">
+                            {imageOffsetX > 0 ? "+" : ""}
+                            {imageOffsetX}%
+                          </span>
+                        </div>
+                        <Slider
+                          min={POSITION_OFFSET_RANGE.min}
+                          max={POSITION_OFFSET_RANGE.max}
+                          step={POSITION_OFFSET_RANGE.step}
+                          value={[imageOffsetX]}
+                          onValueChange={([value]) => setImageOffsetX(value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground text-sm">Vertical</span>
+                          <span className="text-muted-foreground font-mono text-xs tabular-nums">
+                            {imageOffsetY > 0 ? "+" : ""}
+                            {imageOffsetY}%
+                          </span>
+                        </div>
+                        <Slider
+                          min={POSITION_OFFSET_RANGE.min}
+                          max={POSITION_OFFSET_RANGE.max}
+                          step={POSITION_OFFSET_RANGE.step}
+                          value={[imageOffsetY]}
+                          onValueChange={([value]) => setImageOffsetY(value)}
+                        />
+                      </div>
+                    </div>
+                  </div>
                   <p className="text-muted-foreground text-sm lg:hidden">
                     Output resolution:{" "}
                     <span className="text-foreground/85 font-mono">
