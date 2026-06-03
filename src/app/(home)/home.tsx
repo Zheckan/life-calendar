@@ -26,6 +26,13 @@ import {
   type DeviceOrientation,
 } from "@/lib/screen-resolutions";
 import { getPreviewImageTransform } from "@/lib/og-layout";
+import {
+  buildAbsoluteWallpaperUrl,
+  buildAdjustedWallpaperQueryString,
+  buildWallpaperImagePath,
+  DEFAULT_IMAGE_ADJUSTMENT,
+  type ImageAdjustment,
+} from "@/lib/wallpaper-url";
 import { cn } from "@/lib/utils";
 
 const VIEW_OPTIONS: { value: CalendarView; label: string; description: string }[] = [
@@ -52,6 +59,13 @@ function resolvePickerColor(value: string, fallback: string): string {
 
 function clampNumber(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
+}
+
+function createDefaultImageAdjustments(): Record<DeviceOrientation, ImageAdjustment> {
+  return {
+    portrait: { ...DEFAULT_IMAGE_ADJUSTMENT },
+    landscape: { ...DEFAULT_IMAGE_ADJUSTMENT },
+  };
 }
 
 interface ColorControlProps {
@@ -121,9 +135,7 @@ export default function Home(): React.ReactElement {
   const [accentColor, setAccentColor] = useState("");
   const [bgColor, setBgColor] = useState("");
   const [dotColor, setDotColor] = useState("");
-  const [imageOffsetX, setImageOffsetX] = useState(0);
-  const [imageOffsetY, setImageOffsetY] = useState(0);
-  const [imageScale, setImageScale] = useState(100);
+  const [imageAdjustments, setImageAdjustments] = useState(createDefaultImageAdjustments);
   const [copied, setCopied] = useState(false);
   const [loadedImageSrc, setLoadedImageSrc] = useState("");
   const [origin, setOrigin] = useState("");
@@ -143,6 +155,12 @@ export default function Home(): React.ReactElement {
   }, []);
 
   const showWeekStart = WEEK_START_VIEWS.includes(view);
+  const selectedDevice = useMemo(() => findScreenResolution(deviceModel), [deviceModel]);
+  const isTabletPreview = selectedDevice?.deviceType === "tablet";
+  const activeAdjustmentOrientation: DeviceOrientation = isTabletPreview
+    ? tabletOrientation
+    : "portrait";
+  const imageAdjustment = imageAdjustments[activeAdjustmentOrientation];
 
   const baseQueryString = useMemo(() => {
     const params = new URLSearchParams();
@@ -180,20 +198,48 @@ export default function Home(): React.ReactElement {
   ]);
 
   const queryString = useMemo(() => {
-    const params = new URLSearchParams(baseQueryString);
-    if (imageOffsetX !== 0) params.set("offsetX", String(imageOffsetX));
-    if (imageOffsetY !== 0) params.set("offsetY", String(imageOffsetY));
-    if (imageScale !== 100) params.set("imageScale", String(imageScale));
+    return buildAdjustedWallpaperQueryString(baseQueryString, imageAdjustment);
+  }, [baseQueryString, imageAdjustment]);
 
-    return params.toString();
-  }, [baseQueryString, imageOffsetX, imageOffsetY, imageScale]);
-
-  const previewImageSrc = `/og/${width}x${height}?${baseQueryString}`;
-  const wallpaperImageSrc = `/og/${width}x${height}?${queryString}`;
-  const apiUrl = origin ? `${origin}${wallpaperImageSrc}` : "";
+  const previewImageSrc = buildWallpaperImagePath(width, height, baseQueryString);
+  const wallpaperImageSrc = buildWallpaperImagePath(width, height, queryString);
+  const apiUrl = buildAbsoluteWallpaperUrl(origin, wallpaperImageSrc);
   const hasAbsoluteApiUrl = apiUrl.length > 0;
-  const selectedDevice = useMemo(() => findScreenResolution(deviceModel), [deviceModel]);
-  const isTabletPreview = selectedDevice?.deviceType === "tablet";
+  const tabletWallpaperUrls = useMemo(() => {
+    if (!origin || !selectedDevice || selectedDevice.deviceType !== "tablet") {
+      return null;
+    }
+
+    const portraitResolution = getOrientedResolution(selectedDevice, "portrait");
+    const landscapeResolution = getOrientedResolution(selectedDevice, "landscape");
+    const portraitQueryString = buildAdjustedWallpaperQueryString(
+      baseQueryString,
+      imageAdjustments.portrait,
+    );
+    const landscapeQueryString = buildAdjustedWallpaperQueryString(
+      baseQueryString,
+      imageAdjustments.landscape,
+    );
+
+    return {
+      portrait: buildAbsoluteWallpaperUrl(
+        origin,
+        buildWallpaperImagePath(
+          portraitResolution.width,
+          portraitResolution.height,
+          portraitQueryString,
+        ),
+      ),
+      landscape: buildAbsoluteWallpaperUrl(
+        origin,
+        buildWallpaperImagePath(
+          landscapeResolution.width,
+          landscapeResolution.height,
+          landscapeQueryString,
+        ),
+      ),
+    };
+  }, [baseQueryString, imageAdjustments, origin, selectedDevice]);
   const previewDeviceLabel = deviceModel === "Custom" ? "Custom Resolution" : deviceModel;
   const selectedViewOption = VIEW_OPTIONS.find((option) => option.value === view);
   const hasLoadedPreview = loadedImageSrc.length > 0;
@@ -205,9 +251,9 @@ export default function Home(): React.ReactElement {
   const bgPickerColor = resolvePickerColor(bgColor, defaultBgColor);
   const dotPickerColor = resolvePickerColor(dotColor, autoDotColor);
   const previewImageTransform = getPreviewImageTransform({
-    x: imageOffsetX,
-    y: imageOffsetY,
-    scale: imageScale,
+    x: imageAdjustment.offsetX,
+    y: imageAdjustment.offsetY,
+    scale: imageAdjustment.scale,
   });
 
   useEffect(() => {
@@ -258,7 +304,27 @@ export default function Home(): React.ReactElement {
   };
 
   const hasCustomColors = !!(accentColor || bgColor || dotColor);
-  const hasImageAdjustments = imageOffsetX !== 0 || imageOffsetY !== 0 || imageScale !== 100;
+  const hasImageAdjustments =
+    imageAdjustment.offsetX !== 0 || imageAdjustment.offsetY !== 0 || imageAdjustment.scale !== 100;
+  const updateImageAdjustment = (partial: Partial<ImageAdjustment>) => {
+    setImageAdjustments((currentAdjustments) => {
+      const currentAdjustment = currentAdjustments[activeAdjustmentOrientation];
+      const nextAdjustment = { ...currentAdjustment, ...partial };
+
+      if (
+        currentAdjustment.offsetX === nextAdjustment.offsetX &&
+        currentAdjustment.offsetY === nextAdjustment.offsetY &&
+        currentAdjustment.scale === nextAdjustment.scale
+      ) {
+        return currentAdjustments;
+      }
+
+      return {
+        ...currentAdjustments,
+        [activeAdjustmentOrientation]: nextAdjustment,
+      };
+    });
+  };
   const handlePreviewPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
     const frame = event.currentTarget;
     const rect = frame.getBoundingClientRect();
@@ -266,8 +332,8 @@ export default function Home(): React.ReactElement {
       pointerId: event.pointerId,
       startX: event.clientX,
       startY: event.clientY,
-      offsetX: imageOffsetX,
-      offsetY: imageOffsetY,
+      offsetX: imageAdjustment.offsetX,
+      offsetY: imageAdjustment.offsetY,
       frameWidth: rect.width,
       frameHeight: rect.height,
     };
@@ -299,8 +365,7 @@ export default function Home(): React.ReactElement {
       POSITION_OFFSET_RANGE.max,
     );
 
-    setImageOffsetX((current) => (current === nextX ? current : nextX));
-    setImageOffsetY((current) => (current === nextY ? current : nextY));
+    updateImageAdjustment({ offsetX: nextX, offsetY: nextY });
   };
 
   const handlePreviewPointerEnd = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -726,9 +791,7 @@ export default function Home(): React.ReactElement {
                           hasImageAdjustments ? "opacity-100" : "pointer-events-none opacity-0",
                         )}
                         onClick={() => {
-                          setImageOffsetX(0);
-                          setImageOffsetY(0);
-                          setImageScale(100);
+                          updateImageAdjustment(DEFAULT_IMAGE_ADJUSTMENT);
                         }}
                       >
                         <RotateCcw className="h-3 w-3" />
@@ -740,47 +803,47 @@ export default function Home(): React.ReactElement {
                         <div className="flex items-center justify-between">
                           <span className="text-muted-foreground text-sm">Size</span>
                           <span className="text-muted-foreground font-mono text-xs tabular-nums">
-                            {imageScale}%
+                            {imageAdjustment.scale}%
                           </span>
                         </div>
                         <Slider
                           min={IMAGE_SCALE_RANGE.min}
                           max={IMAGE_SCALE_RANGE.max}
                           step={IMAGE_SCALE_RANGE.step}
-                          value={[imageScale]}
-                          onValueChange={([value]) => setImageScale(value)}
+                          value={[imageAdjustment.scale]}
+                          onValueChange={([value]) => updateImageAdjustment({ scale: value })}
                         />
                       </div>
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
                           <span className="text-muted-foreground text-sm">Horizontal</span>
                           <span className="text-muted-foreground font-mono text-xs tabular-nums">
-                            {imageOffsetX > 0 ? "+" : ""}
-                            {imageOffsetX}%
+                            {imageAdjustment.offsetX > 0 ? "+" : ""}
+                            {imageAdjustment.offsetX}%
                           </span>
                         </div>
                         <Slider
                           min={POSITION_OFFSET_RANGE.min}
                           max={POSITION_OFFSET_RANGE.max}
                           step={POSITION_OFFSET_RANGE.step}
-                          value={[imageOffsetX]}
-                          onValueChange={([value]) => setImageOffsetX(value)}
+                          value={[imageAdjustment.offsetX]}
+                          onValueChange={([value]) => updateImageAdjustment({ offsetX: value })}
                         />
                       </div>
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
                           <span className="text-muted-foreground text-sm">Vertical</span>
                           <span className="text-muted-foreground font-mono text-xs tabular-nums">
-                            {imageOffsetY > 0 ? "+" : ""}
-                            {imageOffsetY}%
+                            {imageAdjustment.offsetY > 0 ? "+" : ""}
+                            {imageAdjustment.offsetY}%
                           </span>
                         </div>
                         <Slider
                           min={POSITION_OFFSET_RANGE.min}
                           max={POSITION_OFFSET_RANGE.max}
                           step={POSITION_OFFSET_RANGE.step}
-                          value={[imageOffsetY]}
-                          onValueChange={([value]) => setImageOffsetY(value)}
+                          value={[imageAdjustment.offsetY]}
+                          onValueChange={([value]) => updateImageAdjustment({ offsetY: value })}
                         />
                       </div>
                     </div>
@@ -864,7 +927,7 @@ export default function Home(): React.ReactElement {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.35, ease: [0.16, 1, 0.3, 1] }}
           >
-            <SetupGuide apiUrl={apiUrl} />
+            <SetupGuide apiUrl={apiUrl} tabletWallpaperUrls={tabletWallpaperUrls} />
           </motion.div>
         </main>
 
