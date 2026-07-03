@@ -13,7 +13,8 @@ You can use my hosted version at [life-on-the-grid.vercel.app](https://life-on-t
 - **5 calendar views:** Days, Months (yes, it has option to start from Monday), Quarters, Life (weeks of your life), Goal (countdown to a deadline)
 - **Auto-updating wallpapers** via iOS Shortcuts or Android MacroDroid
 - **Custom colors** for accent, background, and inactive dots with auto-contrast
-- **Multiple phone resolutions** pre-configured (iPhone, Samsung, Pixel) with support for custom sizes (I do not have all phones that exist, so no guarantees that it will work for your phone, not working -> submit a PR)
+- **Searchable phone resolutions** pre-configured (iPhone, Samsung, Pixel) with custom sizes (I do not have all phones that exist, so no guarantees that it will work for your phone, not working -> submit a PR)
+- **Manual positioning** so you can drag and scale the calendar into place before copying the wallpaper URL
 - **Dark and light themes**
 
 ## Getting Started

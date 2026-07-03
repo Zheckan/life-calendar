@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import { motion, AnimatePresence, MotionConfig } from "framer-motion";
 import { DesktopColorPicker } from "@/components/color-picker";
 import { DatePickerField } from "@/components/date-picker-field";
+import { DeviceResolutionPicker } from "@/components/device-resolution-picker";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -19,7 +20,16 @@ import { Copy, Check, Github, Loader2, RotateCcw } from "lucide-react";
 import { SetupGuide } from "@/components/setup-guide";
 import type { CalendarView, WeekStart } from "@/lib/calendar-utils";
 import { getAutoDotColor, normalizeHexColor } from "@/lib/colors";
-import { SCREEN_RESOLUTIONS } from "@/lib/screen-resolutions";
+import { findScreenResolution } from "@/lib/screen-resolutions";
+import { getPreviewImageTransform } from "@/lib/og-layout";
+import {
+  buildAbsoluteWallpaperUrl,
+  buildAdjustedWallpaperQueryString,
+  buildWallpaperImagePath,
+  DEFAULT_IMAGE_ADJUSTMENT,
+  type ImageAdjustment,
+} from "@/lib/wallpaper-url";
+import { cn } from "@/lib/utils";
 
 const VIEW_OPTIONS: { value: CalendarView; label: string; description: string }[] = [
   { value: "days", label: "Days", description: "All days of the year" },
@@ -31,6 +41,9 @@ const VIEW_OPTIONS: { value: CalendarView; label: string; description: string }[
 
 const WEEK_START_VIEWS: CalendarView[] = ["months", "quarters"];
 const GITHUB_URL = "https://github.com/Zheckan/life-calendar";
+const DEFAULT_DEVICE_NAME = "iPhone 15 / 15 Pro / 16";
+const POSITION_OFFSET_RANGE = { min: -20, max: 20, step: 1 };
+const IMAGE_SCALE_RANGE = { min: 80, max: 140, step: 5 };
 const FADE_VARIANTS = {
   hidden: { opacity: 0, height: 0 },
   visible: { opacity: 1, height: "auto" as const },
@@ -38,6 +51,10 @@ const FADE_VARIANTS = {
 
 function resolvePickerColor(value: string, fallback: string): string {
   return normalizeHexColor(value) ?? fallback;
+}
+
+function clampNumber(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
 }
 
 interface ColorControlProps {
@@ -97,19 +114,30 @@ export default function Home(): React.ReactElement {
   const [birthday, setBirthday] = useState("1990-01-15");
   const [weekStart, setWeekStart] = useState<WeekStart>("monday");
   const [theme, setTheme] = useState<"dark" | "light">("dark");
-  const [phoneModel, setPhoneModel] = useState("iPhone 15 / 15 Pro / 16");
+  const [deviceModel, setDeviceModel] = useState(DEFAULT_DEVICE_NAME);
   const [width, setWidth] = useState(1179);
   const [height, setHeight] = useState(2556);
   const [goalTitle, setGoalTitle] = useState("");
   const [goalStart, setGoalStart] = useState("2026-01-01");
   const [goalEnd, setGoalEnd] = useState("2026-12-31");
-  const [scale, setScale] = useState(1);
   const [accentColor, setAccentColor] = useState("");
   const [bgColor, setBgColor] = useState("");
   const [dotColor, setDotColor] = useState("");
+  const [imageAdjustment, setImageAdjustment] = useState<ImageAdjustment>({
+    ...DEFAULT_IMAGE_ADJUSTMENT,
+  });
   const [copied, setCopied] = useState(false);
   const [loadedImageSrc, setLoadedImageSrc] = useState("");
   const [origin, setOrigin] = useState("");
+  const dragStartRef = useRef<{
+    pointerId: number;
+    startX: number;
+    startY: number;
+    offsetX: number;
+    offsetY: number;
+    frameWidth: number;
+    frameHeight: number;
+  } | null>(null);
   const previewImageRef = useRef<HTMLImageElement>(null);
 
   useEffect(() => {
@@ -118,7 +146,7 @@ export default function Home(): React.ReactElement {
 
   const showWeekStart = WEEK_START_VIEWS.includes(view);
 
-  const queryString = useMemo(() => {
+  const baseQueryString = useMemo(() => {
     const params = new URLSearchParams();
     params.set("view", view);
     params.set("theme", theme);
@@ -134,9 +162,6 @@ export default function Home(): React.ReactElement {
       params.set("goalEnd", goalEnd);
       if (goalTitle) params.set("goalTitle", goalTitle);
     }
-    if (view === "months" && scale !== 1) {
-      params.set("scale", String(scale));
-    }
     if (accentColor) params.set("accent", accentColor);
     if (bgColor) params.set("bg", bgColor);
     if (dotColor) params.set("dot", dotColor);
@@ -147,52 +172,59 @@ export default function Home(): React.ReactElement {
     birthday,
     weekStart,
     theme,
-    width,
-    height,
     goalStart,
     goalEnd,
     goalTitle,
     showWeekStart,
-    scale,
     accentColor,
     bgColor,
     dotColor,
   ]);
 
-  const imageSrc = `/og/${width}x${height}?${queryString}`;
-  const apiUrl = origin ? `${origin}${imageSrc}` : "";
+  const queryString = useMemo(() => {
+    return buildAdjustedWallpaperQueryString(baseQueryString, imageAdjustment);
+  }, [baseQueryString, imageAdjustment]);
+
+  const previewImageSrc = buildWallpaperImagePath(width, height, baseQueryString);
+  const wallpaperImageSrc = buildWallpaperImagePath(width, height, queryString);
+  const apiUrl = buildAbsoluteWallpaperUrl(origin, wallpaperImageSrc);
   const hasAbsoluteApiUrl = apiUrl.length > 0;
-  const previewDeviceLabel = phoneModel === "Custom" ? "Custom Resolution" : phoneModel;
+  const previewDeviceLabel = deviceModel === "Custom" ? "Custom Resolution" : deviceModel;
   const selectedViewOption = VIEW_OPTIONS.find((option) => option.value === view);
   const hasLoadedPreview = loadedImageSrc.length > 0;
-  const imageRefreshing = hasLoadedPreview && loadedImageSrc !== imageSrc;
+  const imageRefreshing = hasLoadedPreview && loadedImageSrc !== previewImageSrc;
   const defaultAccentColor = theme === "light" ? "#F97316" : "#F56B3F";
   const defaultBgColor = theme === "light" ? "#F5F5F7" : "#1A1A1A";
   const autoDotColor = getAutoDotColor(theme, bgColor);
   const accentPickerColor = resolvePickerColor(accentColor, defaultAccentColor);
   const bgPickerColor = resolvePickerColor(bgColor, defaultBgColor);
   const dotPickerColor = resolvePickerColor(dotColor, autoDotColor);
+  const previewImageTransform = getPreviewImageTransform({
+    x: imageAdjustment.offsetX,
+    y: imageAdjustment.offsetY,
+    scale: imageAdjustment.scale,
+  });
 
   useEffect(() => {
     const previewImage = previewImageRef.current;
     if (
       previewImage?.complete &&
       previewImage.naturalWidth > 0 &&
-      previewImage.getAttribute("src") === imageSrc
+      previewImage.getAttribute("src") === previewImageSrc
     ) {
-      setLoadedImageSrc(imageSrc);
+      setLoadedImageSrc(previewImageSrc);
     }
-  }, [imageSrc]);
+  }, [previewImageSrc]);
 
-  const handlePhoneChange = (value: string) => {
-    setPhoneModel(value);
-    if (value !== "Custom") {
-      const preset = SCREEN_RESOLUTIONS.find((r) => r.name === value);
-      if (preset) {
-        setWidth(preset.width);
-        setHeight(preset.height);
-      }
+  const handleDeviceChange = (value: string) => {
+    setDeviceModel(value);
+    const preset = findScreenResolution(value);
+    if (!preset || preset.deviceType === "custom") {
+      return;
     }
+
+    setWidth(preset.width);
+    setHeight(preset.height);
   };
 
   const handleCopy = async () => {
@@ -206,6 +238,71 @@ export default function Home(): React.ReactElement {
   };
 
   const hasCustomColors = !!(accentColor || bgColor || dotColor);
+  const hasImageAdjustments =
+    imageAdjustment.offsetX !== 0 || imageAdjustment.offsetY !== 0 || imageAdjustment.scale !== 100;
+  const updateImageAdjustment = (partial: Partial<ImageAdjustment>) => {
+    setImageAdjustment((currentAdjustment) => {
+      const nextAdjustment = { ...currentAdjustment, ...partial };
+
+      if (
+        currentAdjustment.offsetX === nextAdjustment.offsetX &&
+        currentAdjustment.offsetY === nextAdjustment.offsetY &&
+        currentAdjustment.scale === nextAdjustment.scale
+      ) {
+        return currentAdjustment;
+      }
+
+      return nextAdjustment;
+    });
+  };
+  const handlePreviewPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    const frame = event.currentTarget;
+    const rect = frame.getBoundingClientRect();
+    dragStartRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      offsetX: imageAdjustment.offsetX,
+      offsetY: imageAdjustment.offsetY,
+      frameWidth: rect.width,
+      frameHeight: rect.height,
+    };
+    try {
+      frame.setPointerCapture(event.pointerId);
+    } catch {
+      // Synthetic pointer events used by tests may not have an active pointer capture target.
+    }
+  };
+
+  const handlePreviewPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    const dragStart = dragStartRef.current;
+    if (!dragStart || dragStart.pointerId !== event.pointerId) {
+      return;
+    }
+
+    const nextX = clampNumber(
+      Math.round(
+        dragStart.offsetX + ((event.clientX - dragStart.startX) / dragStart.frameWidth) * 100,
+      ),
+      POSITION_OFFSET_RANGE.min,
+      POSITION_OFFSET_RANGE.max,
+    );
+    const nextY = clampNumber(
+      Math.round(
+        dragStart.offsetY + ((event.clientY - dragStart.startY) / dragStart.frameHeight) * 100,
+      ),
+      POSITION_OFFSET_RANGE.min,
+      POSITION_OFFSET_RANGE.max,
+    );
+
+    updateImageAdjustment({ offsetX: nextX, offsetY: nextY });
+  };
+
+  const handlePreviewPointerEnd = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (dragStartRef.current?.pointerId === event.pointerId) {
+      dragStartRef.current = null;
+    }
+  };
 
   return (
     <MotionConfig reducedMotion="user">
@@ -277,8 +374,15 @@ export default function Home(): React.ReactElement {
 
                 <div className="relative flex justify-center">
                   <div
-                    className="border-border/70 relative w-full max-w-[min(100%,20.5rem)] overflow-hidden rounded-[2rem] border bg-black shadow-[0_30px_90px_-45px_rgba(0,0,0,0.95)] lg:max-w-[19.75rem] xl:max-w-[20rem]"
-                    style={{ aspectRatio: `${width} / ${height}` }}
+                    className="border-border/70 relative w-full max-w-[min(100%,20.5rem)] cursor-grab touch-none overflow-hidden rounded-[2rem] border bg-black shadow-[0_30px_90px_-45px_rgba(0,0,0,0.95)] select-none active:cursor-grabbing lg:max-w-[19.75rem] xl:max-w-[20rem]"
+                    style={{
+                      aspectRatio: `${width} / ${height}`,
+                      backgroundColor: bgPickerColor,
+                    }}
+                    onPointerDown={handlePreviewPointerDown}
+                    onPointerMove={handlePreviewPointerMove}
+                    onPointerUp={handlePreviewPointerEnd}
+                    onPointerCancel={handlePreviewPointerEnd}
                   >
                     {!hasLoadedPreview && (
                       <div className="absolute inset-0 z-10 flex items-center justify-center px-6 text-center">
@@ -305,14 +409,19 @@ export default function Home(): React.ReactElement {
                     </AnimatePresence>
                     <img
                       ref={previewImageRef}
-                      src={imageSrc}
+                      src={previewImageSrc}
                       alt=""
                       aria-hidden="true"
+                      draggable={false}
                       className="absolute inset-0 block h-full w-full object-cover"
+                      style={{
+                        transform: previewImageTransform,
+                        transformOrigin: "center",
+                      }}
                       fetchPriority="high"
                       loading="eager"
-                      onLoad={() => setLoadedImageSrc(imageSrc)}
-                      onError={() => setLoadedImageSrc(imageSrc)}
+                      onLoad={() => setLoadedImageSrc(previewImageSrc)}
+                      onError={() => setLoadedImageSrc(previewImageSrc)}
                     />
                   </div>
                 </div>
@@ -527,36 +636,6 @@ export default function Home(): React.ReactElement {
                     />
                   </div>
                 </div>
-
-                {/* Dot Scale */}
-                <AnimatePresence>
-                  {view === "months" && (
-                    <motion.div
-                      className="overflow-hidden"
-                      variants={FADE_VARIANTS}
-                      initial="hidden"
-                      animate="visible"
-                      exit="hidden"
-                      transition={{ duration: 0.2 }}
-                    >
-                      <div className="space-y-2 pt-5 pb-2">
-                        <div className="flex items-center justify-between">
-                          <Label>Dot Scale</Label>
-                          <span className="text-muted-foreground text-sm tabular-nums">
-                            {scale.toFixed(1)}x
-                          </span>
-                        </div>
-                        <Slider
-                          min={0.8}
-                          max={2}
-                          step={0.1}
-                          value={[scale]}
-                          onValueChange={([v]) => setScale(v)}
-                        />
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
               </section>
 
               {/* Display */}
@@ -566,24 +645,88 @@ export default function Home(): React.ReactElement {
                   <div className="grid gap-3 lg:grid-cols-[minmax(0,16rem)_1fr] lg:items-end lg:gap-6">
                     <div className="space-y-2">
                       <Label>Phone Model</Label>
-                      <Select value={phoneModel} onValueChange={handlePhoneChange}>
-                        <SelectTrigger className="w-full lg:w-fit">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {SCREEN_RESOLUTIONS.map((r) => (
-                            <SelectItem key={r.name} value={r.name}>
-                              {r.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <DeviceResolutionPicker
+                        value={deviceModel}
+                        onValueChange={handleDeviceChange}
+                      />
                     </div>
                     <div className="hidden lg:flex lg:flex-col lg:items-end lg:justify-end">
                       <p className="text-muted-foreground text-sm">Output resolution</p>
                       <p className="text-foreground/85 font-mono text-lg leading-none">
                         {width} x {height}
                       </p>
+                    </div>
+                  </div>
+                  <div className="space-y-3 pt-1">
+                    <div className="flex items-center justify-between gap-3">
+                      <Label>Image Position</Label>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        disabled={!hasImageAdjustments}
+                        tabIndex={hasImageAdjustments ? 0 : -1}
+                        aria-hidden={!hasImageAdjustments}
+                        className={cn(
+                          "h-7 gap-1 text-xs transition-opacity",
+                          hasImageAdjustments ? "opacity-100" : "pointer-events-none opacity-0",
+                        )}
+                        onClick={() => {
+                          updateImageAdjustment(DEFAULT_IMAGE_ADJUSTMENT);
+                        }}
+                      >
+                        <RotateCcw className="h-3 w-3" />
+                        Reset
+                      </Button>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground text-sm">Size</span>
+                          <span className="text-muted-foreground font-mono text-xs tabular-nums">
+                            {imageAdjustment.scale}%
+                          </span>
+                        </div>
+                        <Slider
+                          min={IMAGE_SCALE_RANGE.min}
+                          max={IMAGE_SCALE_RANGE.max}
+                          step={IMAGE_SCALE_RANGE.step}
+                          value={[imageAdjustment.scale]}
+                          onValueChange={([value]) => updateImageAdjustment({ scale: value })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground text-sm">Horizontal</span>
+                          <span className="text-muted-foreground font-mono text-xs tabular-nums">
+                            {imageAdjustment.offsetX > 0 ? "+" : ""}
+                            {imageAdjustment.offsetX}%
+                          </span>
+                        </div>
+                        <Slider
+                          min={POSITION_OFFSET_RANGE.min}
+                          max={POSITION_OFFSET_RANGE.max}
+                          step={POSITION_OFFSET_RANGE.step}
+                          value={[imageAdjustment.offsetX]}
+                          onValueChange={([value]) => updateImageAdjustment({ offsetX: value })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground text-sm">Vertical</span>
+                          <span className="text-muted-foreground font-mono text-xs tabular-nums">
+                            {imageAdjustment.offsetY > 0 ? "+" : ""}
+                            {imageAdjustment.offsetY}%
+                          </span>
+                        </div>
+                        <Slider
+                          min={POSITION_OFFSET_RANGE.min}
+                          max={POSITION_OFFSET_RANGE.max}
+                          step={POSITION_OFFSET_RANGE.step}
+                          value={[imageAdjustment.offsetY]}
+                          onValueChange={([value]) => updateImageAdjustment({ offsetY: value })}
+                        />
+                      </div>
                     </div>
                   </div>
                   <p className="text-muted-foreground text-sm lg:hidden">
@@ -595,7 +738,7 @@ export default function Home(): React.ReactElement {
                 </div>
 
                 <AnimatePresence>
-                  {phoneModel === "Custom" && (
+                  {deviceModel === "Custom" && (
                     <motion.div
                       className="overflow-hidden"
                       variants={FADE_VARIANTS}
