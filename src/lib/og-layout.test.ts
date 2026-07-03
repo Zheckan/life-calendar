@@ -10,13 +10,13 @@ import {
 } from "./og-layout";
 
 describe("OG dot grid layout", () => {
-  test("fits days calendar dots inside an iPad Air portrait image", () => {
-    const topPadding = Math.round(2360 * 0.155);
+  test("fits days calendar dots inside a standard phone wallpaper", () => {
+    const topPadding = Math.round(2556 * 0.155);
     const footerHeight = 40 + 36;
-    const bottomReserve = Math.round(2360 * 0.06);
+    const bottomReserve = Math.round(2556 * 0.06);
     const layout = getFittedDotGridLayout({
-      width: 1640,
-      height: 2360,
+      width: 1179,
+      height: 2556,
       cols: 15,
       rows: 25,
       maxGridWidthRatio: 0.79,
@@ -25,17 +25,17 @@ describe("OG dot grid layout", () => {
       minDotSize: 4,
     });
 
-    expect(layout.gridHeight + topPadding + footerHeight + bottomReserve).toBeLessThanOrEqual(2360);
+    expect(layout.gridHeight + topPadding + footerHeight + bottomReserve).toBeLessThanOrEqual(2556);
     expect(layout.dotSize).toBeLessThan(52);
   });
 
-  test("fits days calendar dots inside an iPad Air landscape image", () => {
-    const topPadding = Math.round(1640 * 0.155);
+  test("fits days calendar dots inside a compact custom phone wallpaper", () => {
+    const topPadding = Math.round(1800 * 0.155);
     const footerHeight = 40 + 36;
-    const bottomReserve = Math.round(1640 * 0.06);
+    const bottomReserve = Math.round(1800 * 0.06);
     const layout = getFittedDotGridLayout({
-      width: 2360,
-      height: 1640,
+      width: 1080,
+      height: 1800,
       cols: 15,
       rows: 25,
       maxGridWidthRatio: 0.79,
@@ -44,17 +44,17 @@ describe("OG dot grid layout", () => {
       minDotSize: 4,
     });
 
-    expect(layout.gridHeight + topPadding + footerHeight + bottomReserve).toBeLessThanOrEqual(1640);
-    expect(layout.gridWidth).toBeLessThan(2360 * 0.79);
+    expect(layout.gridHeight + topPadding + footerHeight + bottomReserve).toBeLessThanOrEqual(1800);
+    expect(layout.gridWidth).toBeLessThan(1080 * 0.79);
   });
 
-  test("caps quarter calendar dots inside an iPad Air landscape image", () => {
-    const topPadding = Math.round(1640 * 0.138);
+  test("caps quarter calendar dots inside a compact custom phone wallpaper", () => {
+    const topPadding = Math.round(1600 * 0.138);
     const footerHeight = 50 + 36;
-    const bottomReserve = Math.round(1640 * 0.06);
+    const bottomReserve = Math.round(1600 * 0.06);
     const dotSize = capDotSizeByVerticalSpace({
       dotSize: 25,
-      height: 1640,
+      height: 1600,
       reservedHeight: topPadding + footerHeight + bottomReserve,
       rowCounts: [14, 14],
       cellPitchRatio: 1.88,
@@ -63,7 +63,7 @@ describe("OG dot grid layout", () => {
     });
     const contentHeight = (14 + 14) * (dotSize * 1.88) + dotSize * 1.6;
 
-    expect(topPadding + contentHeight + footerHeight + bottomReserve).toBeLessThanOrEqual(1640);
+    expect(topPadding + contentHeight + footerHeight + bottomReserve).toBeLessThanOrEqual(1600);
     expect(dotSize).toBeLessThan(25);
   });
 
@@ -74,9 +74,9 @@ describe("OG dot grid layout", () => {
   });
 
   test("converts image offset percentages to output pixels", () => {
-    expect(getImageOffsetPixels({ width: 1640, height: 2360, x: 10, y: -5 })).toEqual({
-      x: 164,
-      y: -118,
+    expect(getImageOffsetPixels({ width: 1179, height: 2556, x: 10, y: -5 })).toEqual({
+      x: 118,
+      y: -128,
     });
   });
 

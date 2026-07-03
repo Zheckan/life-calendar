@@ -2,12 +2,10 @@ export interface ScreenResolution {
   name: string;
   width: number;
   height: number;
-  deviceType: "phone" | "tablet" | "custom";
+  deviceType: "phone" | "custom";
   category?: string;
   keywords?: string[];
 }
-
-export type DeviceOrientation = "portrait" | "landscape";
 
 export const SCREEN_RESOLUTIONS: ScreenResolution[] = [
   // Apple
@@ -48,55 +46,6 @@ export const SCREEN_RESOLUTIONS: ScreenResolution[] = [
     category: "Apple",
     deviceType: "phone",
   },
-  {
-    name: "iPad Pro 11-inch",
-    width: 1668,
-    height: 2420,
-    category: "Apple",
-    deviceType: "tablet",
-    keywords: ["ipad pro 11", "11 pro"],
-  },
-  {
-    name: "iPad Pro 13-inch",
-    width: 2064,
-    height: 2752,
-    category: "Apple",
-    deviceType: "tablet",
-    keywords: ["ipad 13 pro", "ipad pro 13", "13 pro"],
-  },
-  {
-    name: "iPad Air 11-inch",
-    width: 1640,
-    height: 2360,
-    category: "Apple",
-    deviceType: "tablet",
-    keywords: ["ipad air 11", "11 air"],
-  },
-  {
-    name: "iPad Air 13-inch",
-    width: 2048,
-    height: 2732,
-    category: "Apple",
-    deviceType: "tablet",
-    keywords: ["ipad air 13", "13 air"],
-  },
-  {
-    name: "iPad mini",
-    width: 1488,
-    height: 2266,
-    category: "Apple",
-    deviceType: "tablet",
-    keywords: ["ipad mini", "mini"],
-  },
-  {
-    name: "iPad 11-inch",
-    width: 1640,
-    height: 2360,
-    category: "Apple",
-    deviceType: "tablet",
-    keywords: ["standard", "base ipad", "ipad standard", "ipad a16"],
-  },
-
   // Samsung
   {
     name: "Samsung Galaxy S24",
@@ -155,15 +104,4 @@ export function searchScreenResolutions(query: string): ScreenResolution[] {
 
     return terms.every((term) => searchable.includes(term));
   });
-}
-
-export function getOrientedResolution(
-  resolution: ScreenResolution,
-  orientation: DeviceOrientation,
-): Pick<ScreenResolution, "width" | "height"> {
-  if (resolution.deviceType !== "tablet" || orientation === "portrait") {
-    return { width: resolution.width, height: resolution.height };
-  }
-
-  return { width: resolution.height, height: resolution.width };
 }

@@ -3,16 +3,10 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Copy, Check, AlertTriangle, ExternalLink } from "lucide-react";
-
-interface TabletWallpaperUrls {
-  portrait: string;
-  landscape: string;
-}
+import { Copy, Check, AlertTriangle } from "lucide-react";
 
 interface SetupGuideProps {
   apiUrl: string;
-  tabletWallpaperUrls: TabletWallpaperUrls | null;
 }
 
 function StepBadge({ number }: { number: number }): React.ReactElement {
@@ -65,17 +59,14 @@ function ImportantBox({ children }: { children: React.ReactNode }): React.ReactE
   );
 }
 
-export function SetupGuide({ apiUrl, tabletWallpaperUrls }: SetupGuideProps): React.ReactElement {
-  const tabletUrls =
-    tabletWallpaperUrls?.portrait && tabletWallpaperUrls.landscape ? tabletWallpaperUrls : null;
-
+export function SetupGuide({ apiUrl }: SetupGuideProps): React.ReactElement {
   return (
     <div className="glass overflow-hidden rounded-2xl p-5 sm:p-6">
       <p className="section-label mb-5">Setup Guide</p>
 
       <Tabs defaultValue="iphone">
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="iphone">Apple</TabsTrigger>
+          <TabsTrigger value="iphone">iPhone</TabsTrigger>
           <TabsTrigger value="android">Android</TabsTrigger>
         </TabsList>
 
@@ -93,152 +84,47 @@ export function SetupGuide({ apiUrl, tabletWallpaperUrls }: SetupGuideProps): Re
             </div>
           </div>
 
-          {tabletUrls ? (
-            <>
-              <div className="space-y-3">
-                <div className="flex items-start gap-3">
-                  <StepBadge number={2} />
-                  <div className="min-w-0 flex-1">
-                    <h3 className="text-foreground font-semibold">iPad Orientation URLs</h3>
-                    <div className="text-muted-foreground mt-2 space-y-3 text-sm">
-                      <p>
-                        Use these two URLs in one shortcut so iPadOS chooses the matching wallpaper
-                        whenever the shortcut runs.
-                      </p>
-                      <div>
-                        <p className="text-foreground font-medium">Portrait</p>
-                        <CopyUrlButton url={tabletUrls.portrait} />
-                      </div>
-                      <div>
-                        <p className="text-foreground font-medium">Landscape</p>
-                        <CopyUrlButton url={tabletUrls.landscape} />
-                      </div>
-                    </div>
-                  </div>
-                </div>
+          <div className="space-y-3">
+            <div className="flex items-start gap-3">
+              <StepBadge number={2} />
+              <div className="min-w-0 flex-1">
+                <h3 className="text-foreground font-semibold">Create Automation</h3>
+                <p className="text-muted-foreground mt-1 text-sm">
+                  Open <strong>Shortcuts</strong> app &rarr; Go to <strong>Automation</strong> tab
+                  &rarr; <strong>New Automation</strong> &rarr; <strong>Time of Day</strong> &rarr;{" "}
+                  <strong>6:00 AM</strong> &rarr; Repeat <strong>&quot;Daily&quot;</strong> &rarr;
+                  Select <strong>&quot;Run Immediately&quot;</strong> &rarr;{" "}
+                  <strong>&quot;Create New Shortcut&quot;</strong>
+                </p>
               </div>
+            </div>
+          </div>
 
-              <div className="space-y-3">
-                <div className="flex items-start gap-3">
-                  <StepBadge number={3} />
-                  <div className="min-w-0 flex-1">
-                    <h3 className="text-foreground font-semibold">Create Rotating Shortcut</h3>
-                    <div className="text-muted-foreground mt-2 space-y-3 text-sm">
-                      <Button asChild variant="outline" size="sm" className="mb-1">
-                        <a href="shortcuts://create-shortcut">
-                          <ExternalLink className="h-4 w-4" />
-                          Open Shortcuts
-                        </a>
-                      </Button>
-                      <ol className="list-inside list-decimal space-y-1">
-                        <li>
-                          Add <strong>&quot;Get Orientation&quot;</strong>.
-                        </li>
-                        <li>
-                          Add <strong>&quot;If&quot;</strong> and set it to check whether
-                          orientation contains <strong>&quot;Landscape&quot;</strong>.
-                        </li>
-                        <li>
-                          In the <strong>If</strong> branch, add <strong>&quot;Text&quot;</strong>{" "}
-                          and paste the landscape URL.
-                        </li>
-                        <li>
-                          In <strong>Otherwise</strong>, add <strong>&quot;Text&quot;</strong> and
-                          paste the portrait URL.
-                        </li>
-                        <li>
-                          Add <strong>&quot;Get Contents of URL&quot;</strong> after{" "}
-                          <strong>End If</strong>.
-                        </li>
-                        <li>
-                          Add <strong>&quot;Set Wallpaper Photo&quot;</strong> and choose{" "}
-                          <strong>&quot;Lock Screen&quot;</strong>.
-                        </li>
-                      </ol>
-                      <ImportantBox>
-                        In <strong>&quot;Set Wallpaper Photo&quot;</strong>, tap the arrow to show
-                        options &rarr; disable both <strong>&quot;Crop to Subject&quot;</strong> and{" "}
-                        <strong>&quot;Show Preview&quot;</strong>. This prevents iPadOS from
-                        cropping and asking for confirmation each time.
-                      </ImportantBox>
-                      <ImportantBox>
-                        iPadOS can read orientation inside a shortcut, but Shortcuts does not offer
-                        a native trigger for every physical rotation. Run this shortcut manually,
-                        with Siri, from Control Center, or from a daily/app automation.
-                      </ImportantBox>
-                      <ImportantBox>
-                        A fully preconfigured one-click shortcut requires Apple&apos;s signed
-                        Shortcuts sharing flow. This page can open the editor and provide exact
-                        URLs, but it should not generate an unsigned shortcut file and present it as
-                        a reliable install.
-                      </ImportantBox>
-                    </div>
-                  </div>
+          <div className="space-y-3">
+            <div className="flex items-start gap-3">
+              <StepBadge number={3} />
+              <div className="min-w-0 flex-1">
+                <h3 className="text-foreground font-semibold">Create Shortcut</h3>
+                <div className="text-muted-foreground mt-2 space-y-3 text-sm">
+                  <p>
+                    <strong>3.1:</strong> Add <strong>&quot;Get Contents of URL&quot;</strong>{" "}
+                    action &rarr; paste the following URL there:
+                  </p>
+                  <CopyUrlButton url={apiUrl} />
+                  <p>
+                    <strong>3.2:</strong> Add <strong>&quot;Set Wallpaper Photo&quot;</strong>{" "}
+                    action &rarr; choose <strong>&quot;Lock Screen&quot;</strong>
+                  </p>
+                  <ImportantBox>
+                    In <strong>&quot;Set Wallpaper Photo&quot;</strong>, tap the arrow to show
+                    options &rarr; disable both <strong>&quot;Crop to Subject&quot;</strong> and{" "}
+                    <strong>&quot;Show Preview&quot;</strong>. This prevents iOS from cropping and
+                    asking for confirmation each time.
+                  </ImportantBox>
                 </div>
               </div>
-
-              <div className="space-y-3">
-                <div className="flex items-start gap-3">
-                  <StepBadge number={4} />
-                  <div className="min-w-0 flex-1">
-                    <h3 className="text-foreground font-semibold">Optional Automation</h3>
-                    <p className="text-muted-foreground mt-1 text-sm">
-                      Open <strong>Shortcuts</strong> &rarr; <strong>Automation</strong> &rarr;{" "}
-                      <strong>New Automation</strong> &rarr; choose <strong>Time of Day</strong> or{" "}
-                      <strong>App</strong> &rarr; select{" "}
-                      <strong>&quot;Run Immediately&quot;</strong> &rarr; add{" "}
-                      <strong>&quot;Run Shortcut&quot;</strong> and select this shortcut.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="space-y-3">
-                <div className="flex items-start gap-3">
-                  <StepBadge number={2} />
-                  <div className="min-w-0 flex-1">
-                    <h3 className="text-foreground font-semibold">Create Automation</h3>
-                    <p className="text-muted-foreground mt-1 text-sm">
-                      Open <strong>Shortcuts</strong> app &rarr; Go to <strong>Automation</strong>{" "}
-                      tab &rarr; <strong>New Automation</strong> &rarr; <strong>Time of Day</strong>{" "}
-                      &rarr; <strong>6:00 AM</strong> &rarr; Repeat{" "}
-                      <strong>&quot;Daily&quot;</strong> &rarr; Select{" "}
-                      <strong>&quot;Run Immediately&quot;</strong> &rarr;{" "}
-                      <strong>&quot;Create New Shortcut&quot;</strong>
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex items-start gap-3">
-                  <StepBadge number={3} />
-                  <div className="min-w-0 flex-1">
-                    <h3 className="text-foreground font-semibold">Create Shortcut</h3>
-                    <div className="text-muted-foreground mt-2 space-y-3 text-sm">
-                      <p>
-                        <strong>3.1:</strong> Add <strong>&quot;Get Contents of URL&quot;</strong>{" "}
-                        action &rarr; paste the following URL there:
-                      </p>
-                      <CopyUrlButton url={apiUrl} />
-                      <p>
-                        <strong>3.2:</strong> Add <strong>&quot;Set Wallpaper Photo&quot;</strong>{" "}
-                        action &rarr; choose <strong>&quot;Lock Screen&quot;</strong>
-                      </p>
-                      <ImportantBox>
-                        In <strong>&quot;Set Wallpaper Photo&quot;</strong>, tap the arrow to show
-                        options &rarr; disable both <strong>&quot;Crop to Subject&quot;</strong> and{" "}
-                        <strong>&quot;Show Preview&quot;</strong>. This prevents iOS from cropping
-                        and asking for confirmation each time.
-                      </ImportantBox>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
+            </div>
+          </div>
         </TabsContent>
 
         <TabsContent value="android" className="mt-6 space-y-6">

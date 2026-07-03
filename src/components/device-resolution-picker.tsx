@@ -20,8 +20,6 @@ interface DeviceResolutionPickerProps {
 
 function getDeviceTypeLabel(deviceType: ScreenResolution["deviceType"]): string {
   switch (deviceType) {
-    case "tablet":
-      return "Tablet";
     case "custom":
       return "Custom";
     case "phone":
@@ -60,7 +58,7 @@ export function DeviceResolutionPicker({
         >
           <span className="min-w-0">
             <span className="block truncate text-sm font-medium">
-              {selected?.name ?? "Select device"}
+              {selected?.name ?? "Select phone"}
             </span>
             {selected && (
               <span className="text-muted-foreground mt-0.5 block truncate font-mono text-xs">
@@ -82,7 +80,7 @@ export function DeviceResolutionPicker({
             <Input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search devices or resolutions..."
+              placeholder="Search phones or resolutions..."
               autoFocus
               className="pl-9"
             />
@@ -120,7 +118,7 @@ export function DeviceResolutionPicker({
             })
           ) : (
             <div className="text-muted-foreground px-3 py-8 text-center text-sm">
-              No devices found.
+              No phones found.
             </div>
           )}
         </div>

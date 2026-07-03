@@ -2,65 +2,54 @@ import { describe, expect, test } from "bun:test";
 
 import {
   SCREEN_RESOLUTIONS,
-  getOrientedResolution,
   findScreenResolution,
   searchScreenResolutions,
 } from "./screen-resolutions";
 
 describe("screen resolutions", () => {
-  test("includes iPad presets as portrait tablet wallpaper resolutions", () => {
+  test("includes phone presets and a custom option", () => {
     expect(SCREEN_RESOLUTIONS).toContainEqual(
       expect.objectContaining({
-        name: "iPad Pro 11-inch",
-        width: 1668,
-        height: 2420,
-        deviceType: "tablet",
+        name: "iPhone 15 / 15 Pro / 16",
+        width: 1179,
+        height: 2556,
+        deviceType: "phone",
       }),
     );
     expect(SCREEN_RESOLUTIONS).toContainEqual(
       expect.objectContaining({
-        name: "iPad Air 13-inch",
-        width: 2048,
-        height: 2732,
-        deviceType: "tablet",
+        name: "Custom",
+        deviceType: "custom",
       }),
     );
   });
 
-  test("finds presets by name", () => {
-    expect(findScreenResolution("iPad mini")).toEqual(
+  test("exposes only phone presets and the custom option", () => {
+    expect(
+      SCREEN_RESOLUTIONS.every((resolution) => ["phone", "custom"].includes(resolution.deviceType)),
+    ).toBe(true);
+  });
+
+  test("finds phone presets by name", () => {
+    expect(findScreenResolution("Google Pixel 9 Pro")).toEqual(
       expect.objectContaining({
-        name: "iPad mini",
-        width: 1488,
-        height: 2266,
+        name: "Google Pixel 9 Pro",
+        width: 1280,
+        height: 2856,
+        deviceType: "phone",
       }),
     );
   });
 
-  test("searches presets by name, keyword, and resolution", () => {
-    expect(searchScreenResolutions("ipad 13 pro").map((resolution) => resolution.name)).toContain(
-      "iPad Pro 13-inch",
+  test("searches phone presets by name, category, and resolution", () => {
+    expect(searchScreenResolutions("iphone 16 pro").map((resolution) => resolution.name)).toEqual(
+      expect.arrayContaining(["iPhone 16 Pro", "iPhone 16 Pro Max"]),
     );
-    expect(searchScreenResolutions("standard").map((resolution) => resolution.name)).toContain(
-      "iPad 11-inch",
+    expect(searchScreenResolutions("samsung").map((resolution) => resolution.name)).toEqual(
+      expect.arrayContaining(["Samsung Galaxy S24", "Samsung Galaxy S24+ / Ultra"]),
     );
-    expect(searchScreenResolutions("1640").map((resolution) => resolution.name)).toEqual(
-      expect.arrayContaining(["iPad Air 11-inch", "iPad 11-inch"]),
+    expect(searchScreenResolutions("1179x2556").map((resolution) => resolution.name)).toContain(
+      "iPhone 15 / 15 Pro / 16",
     );
-  });
-
-  test("swaps tablet preset dimensions for landscape orientation", () => {
-    const ipad = findScreenResolution("iPad Pro 11-inch");
-
-    expect(ipad).toBeDefined();
-    expect(getOrientedResolution(ipad!, "portrait")).toEqual({ width: 1668, height: 2420 });
-    expect(getOrientedResolution(ipad!, "landscape")).toEqual({ width: 2420, height: 1668 });
-  });
-
-  test("does not rotate phone preset dimensions", () => {
-    const iphone = findScreenResolution("iPhone 15 / 15 Pro / 16");
-
-    expect(iphone).toBeDefined();
-    expect(getOrientedResolution(iphone!, "landscape")).toEqual({ width: 1179, height: 2556 });
   });
 });
