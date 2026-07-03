@@ -11,6 +11,13 @@ import {
   type DotState,
 } from "@/lib/calendar-utils";
 import { getAutoDotColor, isValidHexColor } from "@/lib/colors";
+import {
+  capDotSizeByVerticalSpace,
+  getFittedDotGridLayout,
+  getImageOffsetPixels,
+  normalizeImageOffset,
+  normalizeImageScale,
+} from "@/lib/og-layout";
 
 interface ThemeColors {
   bg: string;
@@ -159,6 +166,51 @@ function appendVaryHeader(headers: Headers, value: string): void {
   headers.set("Vary", varyValues.join(", "));
 }
 
+function renderOffsetCanvas(
+  content: React.ReactElement,
+  width: number,
+  height: number,
+  colors: ThemeColors,
+  offsetX: number,
+  offsetY: number,
+  imageScale: number,
+): React.ReactElement {
+  const offset = getImageOffsetPixels({ width, height, x: offsetX, y: offsetY });
+  const scale = normalizeImageScale(imageScale) / 100;
+
+  if (offset.x === 0 && offset.y === 0 && scale === 1) {
+    return content;
+  }
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        position: "relative",
+        width: "100%",
+        height: "100%",
+        overflow: "hidden",
+        backgroundColor: colors.bg,
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          position: "absolute",
+          left: `${offset.x}px`,
+          top: `${offset.y}px`,
+          width: "100%",
+          height: "100%",
+          transform: `scale(${scale})`,
+          transformOrigin: "center",
+        }}
+      >
+        {content}
+      </div>
+    </div>
+  );
+}
+
 function renderLifeCalendar(
   birthday: string,
   width: number,
@@ -267,11 +319,24 @@ function renderDaysCalendar(
 ): React.ReactElement {
   const data = getDaysDots(today);
   const cols = data.dots[0]?.length ?? 15;
+  const rows = data.dots.length;
+  const topPadding = Math.round(height * 0.155);
+  const statFontSize = 36;
+  const statMarginTop = 40;
+  const bottomReserve = Math.round(height * 0.06);
+  const layout = getFittedDotGridLayout({
+    width,
+    height,
+    cols,
+    rows,
+    maxGridWidthRatio: 0.79,
+    reservedHeight: topPadding + statMarginTop + statFontSize + bottomReserve,
+    dotRatio: 0.6,
+    minDotSize: 4,
+  });
 
-  const gridWidth = width * 0.79;
-  const cellSize = gridWidth / cols;
-  const dotSize = Math.max(4, cellSize * 0.6);
-  const gapSize = cellSize - dotSize;
+  const dotSize = layout.dotSize;
+  const gapSize = layout.gapSize;
 
   return (
     <div
@@ -284,7 +349,7 @@ function renderDaysCalendar(
         height: "100%",
         backgroundColor: colors.bg,
         fontFamily: "Inter",
-        paddingTop: `${Math.round(height * 0.155)}px`,
+        paddingTop: `${topPadding}px`,
       }}
     >
       <div
@@ -321,8 +386,8 @@ function renderDaysCalendar(
       <div
         style={{
           display: "flex",
-          marginTop: "40px",
-          fontSize: "36px",
+          marginTop: `${statMarginTop}px`,
+          fontSize: `${statFontSize}px`,
           color: colors.text,
         }}
       >
@@ -484,7 +549,23 @@ function renderQuarterCalendar(
 
   const cellWidth = width * 0.85;
   const quarterWidth = cellWidth / 2;
-  const dotSize = Math.max(4, Math.min((quarterWidth * 0.7) / 7, 25));
+  const baseDotSize = Math.max(4, Math.min((quarterWidth * 0.7) / 7, 25));
+  const rowWeekCounts = [0, 1].map((rowIdx) =>
+    Math.max(...data.quarters.slice(rowIdx * 2, (rowIdx + 1) * 2).map((q) => q.dots[0].length)),
+  );
+  const topPadding = Math.round(height * 0.138);
+  const statMarginTop = 50;
+  const statFontSize = 36;
+  const bottomReserve = Math.round(height * 0.06);
+  const dotSize = capDotSizeByVerticalSpace({
+    dotSize: baseDotSize,
+    height,
+    reservedHeight: topPadding + statMarginTop + statFontSize + bottomReserve,
+    rowCounts: rowWeekCounts,
+    cellPitchRatio: 1.88,
+    rowGapRatio: 1.6,
+    minDotSize: 4,
+  });
   const gapSize = Math.max(2, dotSize * 0.88);
 
   return (
@@ -498,7 +579,7 @@ function renderQuarterCalendar(
         height: "100%",
         backgroundColor: colors.bg,
         fontFamily: "Inter",
-        paddingTop: `${Math.round(height * 0.138)}px`,
+        paddingTop: `${topPadding}px`,
       }}
     >
       <div
@@ -585,8 +666,8 @@ function renderQuarterCalendar(
       <div
         style={{
           display: "flex",
-          marginTop: "50px",
-          fontSize: "36px",
+          marginTop: `${statMarginTop}px`,
+          fontSize: `${statFontSize}px`,
           color: colors.text,
         }}
       >
@@ -603,17 +684,34 @@ function renderGoalCalendar(
   goalEnd: Date,
   goalTitle: string,
   width: number,
+  height: number,
   colors: ThemeColors,
   today: Date,
 ): React.ReactElement {
   const data = getGoalDots(goalStart, goalEnd, today);
   const cols = data.dots[0]?.length ?? 15;
+  const rows = data.dots.length;
   const titleText = goalTitle.trim() || "Goal";
+  const titleFontSize = Math.min(36, Math.max(16, Math.floor((width / titleText.length) * 1.2)));
+  const topPadding = Math.round(height * 0.14);
+  const titleMarginBottom = 40;
+  const statFontSize = 36;
+  const statMarginTop = 40;
+  const bottomReserve = Math.round(height * 0.06);
+  const layout = getFittedDotGridLayout({
+    width,
+    height,
+    cols,
+    rows,
+    maxGridWidthRatio: 0.79,
+    reservedHeight:
+      topPadding + titleFontSize + titleMarginBottom + statMarginTop + statFontSize + bottomReserve,
+    dotRatio: 0.6,
+    minDotSize: 4,
+  });
 
-  const gridWidth = width * 0.79;
-  const cellSize = gridWidth / cols;
-  const dotSize = Math.max(4, cellSize * 0.6);
-  const gapSize = cellSize - dotSize;
+  const dotSize = layout.dotSize;
+  const gapSize = layout.gapSize;
 
   return (
     <div
@@ -626,13 +724,14 @@ function renderGoalCalendar(
         height: "100%",
         backgroundColor: colors.bg,
         fontFamily: "Inter",
+        paddingTop: `${topPadding}px`,
       }}
     >
       <div
         style={{
-          fontSize: `${Math.min(36, Math.max(16, Math.floor((width / titleText.length) * 1.2)))}px`,
+          fontSize: `${titleFontSize}px`,
           color: colors.text,
-          marginBottom: "40px",
+          marginBottom: `${titleMarginBottom}px`,
           maxWidth: `${width * 0.85}px`,
           textAlign: "center" as const,
           overflow: "hidden",
@@ -674,8 +773,8 @@ function renderGoalCalendar(
       <div
         style={{
           display: "flex",
-          marginTop: "40px",
-          fontSize: "36px",
+          marginTop: `${statMarginTop}px`,
+          fontSize: `${statFontSize}px`,
           color: colors.text,
         }}
       >
@@ -732,6 +831,9 @@ export async function GET(
   const accent = searchParams.get("accent");
   const bg = searchParams.get("bg");
   const dot = searchParams.get("dot");
+  const offsetX = normalizeImageOffset(searchParams.get("offsetX"));
+  const offsetY = normalizeImageOffset(searchParams.get("offsetY"));
+  const imageScale = normalizeImageScale(searchParams.get("imageScale"));
   const goalStartDate = parseDateParam(goalStart, "2026-01-01");
   const goalEndDate = parseDateParam(goalEnd, "2026-12-31");
   const { today, todayKey, timeZone } = resolveCurrentDate(request);
@@ -751,13 +853,23 @@ export async function GET(
       content = renderQuarterCalendar(weekStart, width, height, colors, today);
       break;
     case "goal":
-      content = renderGoalCalendar(goalStartDate, goalEndDate, goalTitle, width, colors, today);
+      content = renderGoalCalendar(
+        goalStartDate,
+        goalEndDate,
+        goalTitle,
+        width,
+        height,
+        colors,
+        today,
+      );
       break;
     case "days":
     default:
       content = renderDaysCalendar(width, height, colors, today);
       break;
   }
+
+  content = renderOffsetCanvas(content, width, height, colors, offsetX, offsetY, imageScale);
 
   const interFontData = await interFont;
 
