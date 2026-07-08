@@ -1,0 +1,12 @@
+[install]
+# Avoid installing packages published within the last 3 days (259200 seconds).
+minimumReleaseAge = 259200
+# TypeScript 7 and its platform binaries are updated on their own cadence.
+minimumReleaseAgeExcludes = [
+  "typescript",
+  "@typescript/native-preview",
+  "@typescript/typescript-darwin-arm64",
+  "@typescript/typescript-darwin-x64",
+  "@typescript/typescript-linux-arm64",
+  "@typescript/typescript-linux-x64",
+]
